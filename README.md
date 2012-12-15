@@ -107,10 +107,25 @@ Note that "quadratic interpolation" is technically "non-interpolating", meaning 
 
 In `d` dimensions, interpolation references `n^d` grid points, where `n` is the number of grid points used in one dimension. `InterpQuadratic` corresponds to `n=3`, and cubic spline interpolation would correspond to `n=4`. Consequently, in higher dimensions quadratic interpolation can be a significant savings relative to cubic spline interpolation.
 
-#### Lower-level interfaces
+#### Low-level interface
 
-It should be noted that, in addition to the high-level `InterpGrid` interface, **Grid** also has lower-level interfaces. Users who need to extract values from multi-valued functions (e.g., an RGB image) can achieve significant savings by using this lower-level interface. Examples of such usage can be found in the `test/` directory.
+It should be noted that, in addition to the high-level `InterpGrid` interface, **Grid** also has lower-level interfaces. Users who need to extract values from multi-valued functions (e.g., an RGB image, which has three colors at each position) can achieve significant savings by using this low-level interface. The main cost of interpolation is computing the coefficients, and by using the low-level interface you can do this just once at each x location and use it for each color channel.
 
+Here's an example using the low-level interface, starting from the one-dimensional quadratic example above:
+```julia
+y = qfunc(xg)
+# Do the following once
+interp_invert!(y, BCnan, InterpQuadratic)   # solve for generalized interp. coefficients
+ic = InterpGridCoefs(y, InterpQuadratic)    # prepare for interpolation on this grid
+
+# Do the following for each evaluation point
+set_position(ic, BCnil, true, [1.8])        # set position to x=1.8, computes the coefs
+v = interp(ic, y)                           # extract the value
+# Do this if you want the slope at the same point
+set_gradient_coordinate(ic, 1)              # change coefs to calc gradient along coord 1
+g = interp(ic, y)                           # extract the gradient
+```
+If this were an RGB image, you could call `interp` once for the red color channel, once for the green, and once for the blue, with just one call to `set_position`.
 
 ### Restriction and prolongation
 
@@ -124,16 +139,16 @@ julia> imgr = restrict(img, [true,true,false]);
 julia> size(imgr)
 (961,541,3)
 ```
-The second argument to restrict specifies which dimensions should be restricted.
+The second argument to `restrict` specifies which dimensions should be down-sampled.
 
-Notice that the sizes are not precisely 2-fold smaller; this has to do with the fact that restriction is the adjoint of prolongation, which interpolates (using linear interpolation) at intermediate points. For prolongation, you also have to supply the desired size:
+Notice that the sizes are not precisely 2-fold smaller; this is because restriction is technically defined as the adjoint of prolongation, and prolongation interpolates (linearly) at intermediate points. For prolongation, you also have to supply the desired size:
 ```julia
 julia> img2 = prolong(imgr, [size(img)...]);
 
 julia> size(img2)
 (1920,1080,3)
 ```
-If a given dimension has size `n`, then the two possible sizes for the prolonged dimension are `2n-2` (if you want it to be even) and `2n-1` (if you want it to be odd). For odd-sized outputs, the interpolation is at half-grid points; for even-sized outputs, all output values are interpolated, at 1/4 and 3/4 grid points.
+If a given dimension has size `n`, then the prolonged dimension can be either of size `2n-2` (if you want it to be even) or `2n-1` (if you want it to be odd). For odd-sized outputs, the interpolation is at half-grid points; for even-sized outputs, all output values are interpolated, at 1/4 and 3/4 grid points. Having both choices available makes it possible to apply `restrict` to arrays of any size.
 
 If you plan multiple rounds of restriction, you can get the "schedule" of sizes from the function `restrict_size`:
 ```
