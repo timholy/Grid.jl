@@ -16,7 +16,6 @@ Pkg.add("Grid")
 To use the Grid module, begin your code with
 
 ```julia
-load("Grid")
 using Grid
 ```
 
