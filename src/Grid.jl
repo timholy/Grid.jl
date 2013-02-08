@@ -157,7 +157,7 @@ function setx(G::InterpGrid, x...)
         xG[idim] = x[idim]
     end
 end
-setx(G::InterpGrid, x::Vector) = copy_to(G.x, x)
+setx(G::InterpGrid, x::Vector) = copy!(G.x, x)
 function setxfill(G::InterpGrid, x...)
     xG = G.x
     N = length(xG)
@@ -631,7 +631,7 @@ ndims(G::InterpGrid) = length(G.x)
 eltype{T,IT<:InterpType}(ic::InterpGridCoefs{T,IT}) = T
 interptype{IT<:InterpType,T}(ic::InterpGridCoefs{T,IT}) = IT
 ndims(ic::InterpGridCoefs) = length(ic.coord1d)
-show(io, ic::InterpGridCoefs) = print(io, "InterpGridCoefs{", eltype(ic), ",", interptype(ic), "}")
+show(io::IO, ic::InterpGridCoefs) = print(io, "InterpGridCoefs{", eltype(ic), ",", interptype(ic), "}")
 
 
 # Generalized interpolation of higher order than InterpLinear requires
@@ -741,7 +741,7 @@ function interp_index_coef{T}(indices::Array{Int}, coefs::Array{T}, coord1d::Vec
     n_dims = length(coef1d)
     l = length(coef1d[1])
     if n_dims == 1
-        copy_to(coefs, coef1d[1])
+        copy!(coefs, coef1d[1])
         s = strides[1]
         c = coord1d[1]
         for i = 1:l
@@ -827,7 +827,7 @@ function interp_coef{T}(coefs::Array{T}, coef1d::Vector{Vector{T}})
     n_dims = length(coef1d)
     l = length(coef1d[1])
     if n_dims == 1
-        copy_to(coefs, coef1d[1])
+        copy!(coefs, coef1d[1])
     elseif n_dims == 2
         cf1 = coef1d[1]
         cf2 = coef1d[2]
@@ -1032,7 +1032,7 @@ function prolong{T<:LapackScalar}(A::Array{T}, dim::Integer, len::Integer)
             startA = sum((indices-1).*sA)+1
             startP = sum((indices-1).*sP)+1
             # handle the on-grid points
-            copy_to(P, Range(startP, 2*skipP, n), A, Range(startA, skipA, n))
+            copy!(P, Range(startP, 2*skipP, n), A, Range(startA, skipA, n))
             # handle the off-grid points (linear interpolation)
             rP = Range(startP+skipP, 2*skipP, n-1)
             BLAS.axpy!(0.5, A, Range(startA, skipA, n-1), P, rP)
