@@ -6,8 +6,6 @@ Continuous objects, such as functions or images, are frequently sampled on a reg
 
 Within Julia, use the package manager:
 ```julia
-load("pkg.jl")
-Pkg.init()     # if you've never installed a package before
 Pkg.add("Grid")
 ```
 
