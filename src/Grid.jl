@@ -412,7 +412,7 @@ export set_position, set_gradient_coordinate, interp, set_size
 # and/or specific dimensions. For example, an RGB image might be
 # interpolated with respect to the spatial dimensions but not the
 # dimension that holds color.
-function InterpGridCoefs{T<:FloatingPoint,IT<:InterpType}(::Type{T}, ::Type{IT}, dims::Vector{Int}, strides::Vector{Int})
+function InterpGridCoefs{T<:FloatingPoint,IT<:InterpType}(::Type{T}, ::Type{IT}, dims::Union(Dims,Vector{Int}), strides::Union(Dims,Vector{Int}))
     N = length(strides)
     if length(dims) != N
         error("Length of dims and strides must match")
@@ -437,7 +437,7 @@ function InterpGridCoefs{T<:FloatingPoint,IT<:InterpType}(::Type{T}, ::Type{IT},
         interp_coords_1d(coord1d[idim], IT)
     end
     interp_index(offset, coord1d, strides)
-    InterpGridCoefs{T,IT}(coord1d,coef1d,gcoef1d,c1d,dims,strides,offset,0,index,false,false,coef)
+    InterpGridCoefs{T,IT}(coord1d,coef1d,gcoef1d,c1d,[dims...],[strides...],offset,0,index,false,false,coef)
 end
 InterpGridCoefs{IT<:InterpType}(A::Array, ::Type{IT}) = InterpGridCoefs(eltype(A), IT, [size(A)...], [strides(A)...])
 
