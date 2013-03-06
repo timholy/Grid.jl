@@ -23,15 +23,20 @@ import Base.done, Base.next, Base.start
 type Counter
     max::Vector{Int}
 end
-Counter(sz) = Counter([sz...])
+Counter(sz) = Counter(Int[sz...])
 
 function start(c::Counter)
     N = length(c.max)
     state = ones(Int,N)
-    state[1] = 0 # because of start/done/next sequence, start out one behind
+    if N > 0
+        state[1] = 0 # because of start/done/next sequence, start out one behind
+    end
     return state
 end
 function done(c::Counter, state)
+    if isempty(state)
+        return true
+    end
     # we do the increment as part of "done" to make exit-testing more efficient
     state[1] += 1
     i = 1
