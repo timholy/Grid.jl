@@ -48,9 +48,7 @@ function done(c::Counter, state)
     end
     state[end] > max[end]
 end
-function next(c::Counter, state)
-    return state, state
-end
+next(c::Counter, state) = state, state
 
 export Counter, start, done, next
 
@@ -660,9 +658,8 @@ function interp_invert!{BC<:BoundaryCondition}(A::Array, ::Type{BC}, ::Type{Inte
         dl = copy(du)
         M = _interp_invert_matrix(BC, InterpQuadratic, dl, d, du)
         sizeA[idim] = 1  # don't iterate over the dimension we're solving on
-        rng = 1:stridesA[idim]:n*stridesA[idim]
         for cc in Counter(sizeA)
-            rng.start = sum((cc-1).*stridesA) + 1
+            rng = Range(sum((cc-1).*stridesA) + 1, stridesA[idim], n)
             solve(A, rng, M, A, rng) # in-place
         end
         sizeA[idim] = size(A, idim)
@@ -1132,7 +1129,7 @@ function restrict{T<:LapackScalar}(A::Array{T}, dim::Integer, scale::Real)
             rA = Range(startA+skipA, 2*skipA, n-1)
             rR = Range(startR, skipR, n-1)
             BLAS.axpy!(scale/2, A, rA, R, rR)
-            rR.start += skipR
+            rR = Range(startR+skipR, skipR, n-1)
             BLAS.axpy!(scale/2, A, rA, R, rR)
         end
     else
@@ -1142,11 +1139,11 @@ function restrict{T<:LapackScalar}(A::Array{T}, dim::Integer, scale::Real)
             rA = Range(startA, 2*skipA, n-1)
             rR = Range(startR, skipR, n-1)
             BLAS.axpy!(0.75*scale, A, rA, R, rR)
-            rA.start += skipA
+            rA = Range(startA+skipA, 2*skipA, n-1)
             BLAS.axpy!(0.25*scale, A, rA, R, rR)
-            rR.start += skipR
+            rR = Range(startR+skipR, skipR, n-1)
             BLAS.axpy!(0.75*scale, A, rA, R, rR)
-            rA.start -= skipA
+            rA = Range(startA, 2*skipA, n-1)
             BLAS.axpy!(0.25*scale, A, rA, R, rR)
         end
     end
