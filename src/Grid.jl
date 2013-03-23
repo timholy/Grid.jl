@@ -1037,8 +1037,8 @@ function prolong{T<:LapackScalar}(A::Array{T}, dim::Integer, len::Integer)
             copy!(P, Range(startP, 2*skipP, n), A, Range(startA, skipA, n))
             # handle the off-grid points (linear interpolation)
             rP = Range(startP+skipP, 2*skipP, n-1)
-            BLAS.axpy!(0.5, A, Range(startA, skipA, n-1), P, rP)
-            BLAS.axpy!(0.5, A, Range(startA+skipA, skipA, n-1), P, rP)
+            Base.LinAlg.BLAS.axpy!(0.5, A, Range(startA, skipA, n-1), P, rP)
+            Base.LinAlg.BLAS.axpy!(0.5, A, Range(startA+skipA, skipA, n-1), P, rP)
         end
     else
         # Interpolate at 1/4 and 3/4 points
@@ -1049,10 +1049,10 @@ function prolong{T<:LapackScalar}(A::Array{T}, dim::Integer, len::Integer)
             rA2 = Range(startA+skipA, skipA, n-1)
             rP1 = Range(startP, 2*skipP, n-1)
             rP2 = Range(startP+skipP, 2*skipP, n-1)
-            BLAS.axpy!(0.75, A, rA1, P, rP1)
-            BLAS.axpy!(0.25, A, rA2, P, rP1)
-            BLAS.axpy!(0.25, A, rA1, P, rP2)
-            BLAS.axpy!(0.75, A, rA2, P, rP2)
+            Base.LinAlg.BLAS.axpy!(0.75, A, rA1, P, rP1)
+            Base.LinAlg.BLAS.axpy!(0.25, A, rA2, P, rP1)
+            Base.LinAlg.BLAS.axpy!(0.25, A, rA1, P, rP2)
+            Base.LinAlg.BLAS.axpy!(0.75, A, rA2, P, rP2)
         end
     end
     return P
@@ -1125,12 +1125,12 @@ function restrict{T<:LapackScalar}(A::Array{T}, dim::Integer, scale::Real)
         for indices = Counter(sz)
             startA = sum((indices-1).*sA)+1
             startR = sum((indices-1).*sR)+1
-            BLAS.axpy!(scale, A, Range(startA, 2*skipA, n), R, Range(startR, skipR, n))
+            Base.LinAlg.BLAS.axpy!(scale, A, Range(startA, 2*skipA, n), R, Range(startR, skipR, n))
             rA = Range(startA+skipA, 2*skipA, n-1)
             rR = Range(startR, skipR, n-1)
-            BLAS.axpy!(scale/2, A, rA, R, rR)
+            Base.LinAlg.BLAS.axpy!(scale/2, A, rA, R, rR)
             rR = Range(startR+skipR, skipR, n-1)
-            BLAS.axpy!(scale/2, A, rA, R, rR)
+            Base.LinAlg.BLAS.axpy!(scale/2, A, rA, R, rR)
         end
     else
         for indices = Counter(sz)
@@ -1138,13 +1138,13 @@ function restrict{T<:LapackScalar}(A::Array{T}, dim::Integer, scale::Real)
             startR = sum((indices-1).*sR)+1
             rA = Range(startA, 2*skipA, n-1)
             rR = Range(startR, skipR, n-1)
-            BLAS.axpy!(0.75*scale, A, rA, R, rR)
+            Base.LinAlg.BLAS.axpy!(0.75*scale, A, rA, R, rR)
             rA = Range(startA+skipA, 2*skipA, n-1)
-            BLAS.axpy!(0.25*scale, A, rA, R, rR)
+            Base.LinAlg.BLAS.axpy!(0.25*scale, A, rA, R, rR)
             rR = Range(startR+skipR, skipR, n-1)
-            BLAS.axpy!(0.75*scale, A, rA, R, rR)
+            Base.LinAlg.BLAS.axpy!(0.75*scale, A, rA, R, rR)
             rA = Range(startA, 2*skipA, n-1)
-            BLAS.axpy!(0.25*scale, A, rA, R, rR)
+            Base.LinAlg.BLAS.axpy!(0.25*scale, A, rA, R, rR)
         end
     end
     return R
