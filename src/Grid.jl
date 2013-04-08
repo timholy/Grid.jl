@@ -531,7 +531,7 @@ end
 function interp_coords_1d{BC<:Union(BCnil,BCnan,BCna)}(coord1d::Vector{Int}, ::Type{BC}, ::Type{InterpQuadratic}, x, len::Int)
     if x > 1.5 && x+0.5 < len
         ix = iround(x)
-    elseif x < 1.5
+    elseif x <= 1.5
         ix = 2
     else
         ix = len-1
@@ -551,7 +551,7 @@ function interp_coords_1d{T,BC<:Union(BCnearest,BCfill)}(coord1d::Vector{Int}, :
         coord1d[3] = ix+1
         iswrap = false
         dx = x-ix
-    elseif x < 1.5
+    elseif x <= 1.5
         ix = one(T)
         coord1d[1] = 2
         coord1d[2] = 1
