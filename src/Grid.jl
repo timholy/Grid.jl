@@ -1189,11 +1189,11 @@ function restrict{T}(A::Array{T}, dim::Integer, scale::Real)
     return R
 end
 restrict{T}(A::Array{T}, dim::Integer) = restrict(A, dim, one(T))
-function restrict(A::Array, flag::Array{Bool}, scale::Real)
+function restrict(A::Array, flag::Union(Array{Bool},BitArray), scale::Real)
     func = (A, dim) -> restrict(A, dim, scale)
     return mapdim(func, A, flag)
 end
-restrict{T}(A::Array{T}, flag::Array{Bool}) = restrict(A, flag, one(eltype(T)))
+restrict{T}(A::Array{T}, flag::Union(Array{Bool},BitArray)) = restrict(A, flag, one(eltype(T)))
 
 # "Balanced" restriction and prolongation
 
@@ -1237,11 +1237,11 @@ function restrictb{T}(A::Array{T}, dim::Integer, scale::Real)
     return Ar
 end
 restrictb{T}(A::Array{T}, dim::Integer) = restrictb(A, dim, one(T))
-function restrictb(A::Array, flag::Array{Bool}, scale::Real)
+function restrictb(A::Array, flag::Union(Array{Bool},BitArray), scale::Real)
     func = (A, dim) -> restrictb(A, dim, scale)
     return mapdim(func, A, flag)
 end
-restrictb{T}(A::Array{T}, flag::Array{Bool}) = restrictb(A, flag, one(eltype(T)))
+restrictb{T}(A::Array{T}, flag::Union(Array{Bool},BitArray)) = restrictb(A, flag, one(eltype(T)))
 function prolongb{T}(A::Array{T}, dim::Integer, len::Integer)
     a::T
     b::T
@@ -1325,11 +1325,11 @@ function restrict_extrap(A::Array, dim::Integer, scale::Real)
     return Ar
 end
 restrict_extrap{T}(A::Array{T}, dim::Integer) = restrict_extrap(A, dim, one(T))
-function restrict_extrap(A::Array, flag::Array{Bool}, scale::Real)
+function restrict_extrap(A::Array, flag::Union(Array{Bool},BitArray), scale::Real)
     func = (A, dim) -> restrict_extrap(A, dim, scale)
     return mapdim(func, A, flag)
 end
-restrict_extrap{T}(A::Array{T}, flag::Array{Bool}) = restrict_extrap(A, flag, one(T))
+restrict_extrap{T}(A::Array{T}, flag::Union(Array{Bool},BitArray)) = restrict_extrap(A, flag, one(T))
 
 function prolong_size(sz::Int, len::Int)
     if isodd(len)
@@ -1344,7 +1344,7 @@ function prolong_size(sz::Int, len::Int)
 end
 
 restrict_size(len::Int) = isodd(len) ? div(len+1,2) : div(len,2)+1
-function restrict_size(szin::Union(Dims, Vector{Int}), flag::Array{Bool})
+function restrict_size(szin::Union(Dims, Vector{Int}), flag::Union(Array{Bool},BitArray))
     if length(szin) != size(flag,1)
         error("Boolean flag must have as many rows as dimensions of A")
     end
@@ -1361,7 +1361,7 @@ function restrict_size(szin::Union(Dims, Vector{Int}), flag::Array{Bool})
     end
     return sz
 end
-function prolong_size(szin::Union(Dims, Vector{Int}), flag::Array{Bool})
+function prolong_size(szin::Union(Dims, Vector{Int}), flag::Union(Array{Bool},BitArray))
     sz = restrict_size(szin, flag)
     return [sz[:,end-1:-1:1] [szin...]]
 end
