@@ -87,7 +87,24 @@ gnum = derivative_numer(func, x, 1)
 gnum = derivative_numer(func, x, 2)
 @assert abs(g[2]-gnum) < Eps*(abs(g[2])+abs(gnum))
 
-# Restrict/prolong
+#### Interpolation on uneven grids ####
+x = [100.0,110.0,150.0]
+y = rand(3)
+iu = InterpUneven(x, y, -200, InterpNearest)
+@assert iu[99] == -200
+@assert iu[101] == y[1]
+@assert iu[106] == y[2]
+@assert iu[149] == y[3]
+@assert iu[150.1] == -200
+iu = InterpUneven(x, y, BCna, InterpLinear)
+@assert isnan(iu[99])
+@assert iu[101] == 0.9*y[1] + 0.1*y[2]
+@assert iu[106] == 0.4*y[1] + 0.6*y[2]
+@assert iu[149] == y[2]/40 + (39/40)*y[3]
+@assert isnan(iu[150.1])
+
+
+#### Restrict/prolong ####
 # 1d
 a = zeros(5)
 a[3] = 1

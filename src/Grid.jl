@@ -1,6 +1,5 @@
 module Grid
-import Base.eltype, Base.isvalid, Base.ndims, Base.ref, Base.show
-import Base.done, Base.next, Base.start
+import Base: done, next, start, eltype, getindex, isvalid, ndims, ref, show
 
 #### Iterator ####
 # An n-dimensional grid iterator. This allows you to do things in
@@ -146,6 +145,7 @@ function InterpGrid{T<:FloatingPoint, IT<:InterpType}(A::Array{T}, f::Number, ::
     InterpGrid{T, BCfill, IT}(coefs, ic, x, convert(T, f))
 end
 
+
 function _ref{T}(G::InterpGrid{T})
     set_position(G.ic, boundarycondition(G), false, G.x)
     interp(G.ic, G.coefs)
@@ -277,6 +277,62 @@ function valgrad{T}(g::Vector{T}, G::InterpGrid{T}, x::Vector{T})
     _valgrad(g, G)
 end
 export ref, valgrad
+
+#### Non-uniform grid interpolation ####
+
+# Currently supports only 1d, nearest-neighbor or linear
+# Consequently, the internal representation may change in the future
+# BCperiodic and BCreflect not supported
+type InterpUneven{T<:FloatingPoint, BC<:BoundaryCondition, IT<:InterpType}
+    grid::Vector{Vector{T}}
+    coefs::Array{T}
+    x::Vector{T}
+    fillval::T  # used only for BCfill (if ever)
+end
+export InterpUneven
+InterpUneven{T<:FloatingPoint, BC<:BoundaryCondition, IT<:Union(InterpNearest,InterpLinear)}(grid::Vector{T}, A::AbstractVector, ::Type{BC}, ::Type{IT}) =
+    InterpUneven(Vector{T}[grid], A, BC, IT) # special 1d syntax
+InterpUneven{T<:FloatingPoint, BC<:BoundaryCondition, IT<:Union(InterpNearest,InterpLinear)}(grid::(Vector{T}...), A::AbstractVector, ::Type{BC}, ::Type{IT}) =
+    InterpUneven(Vector{T}[grid...], A, BC, IT)
+function InterpUneven{T<:FloatingPoint, BC<:BoundaryCondition, IT<:Union(InterpNearest,InterpLinear)}(grid::Vector{Vector{T}}, A::AbstractArray, ::Type{BC}, ::Type{IT})
+    if length(grid) != 1
+        error("Sorry, for now only 1d is supported")
+    end
+    if BC == BCreflect || BC == BCperiodic
+        error("Sorry, reflecting or periodic boundary conditions not yet supported")
+    end
+    for i = 1:length(grid)
+        if !issorted(grid[i])
+            error("Coordinates must be supplied in increasing order")
+        end
+    end
+    grid = copy(grid)
+    coefs = T[A]
+    x = zeros(T, ndims(A))
+    InterpUneven{T, BC, IT}(grid, coefs, x, nan(T))
+end
+function InterpUneven{T<:FloatingPoint, IT<:InterpType}(grid, A::Array{T}, f::Number, ::Type{IT})
+    iu = InterpUneven(grid, A, BCfill, IT)
+    iu.fillval = f
+    iu
+end
+
+function getindex{T,BC<:Union(BCfill,BCna,BCnan)}(G::InterpUneven{T,BC}, x::Number)
+    g = G.grid[1]
+    i = (x == g[1]) ? 2 : searchsortedfirst(g, x)
+    (i == 1 || i == length(g)+1) ? G.fillval : _interpu(x, g, i, G.coefs, interptype(G))
+end
+function getindex{T}(G::InterpUneven{T,BCnil}, x::Number)
+    g = G.grid[1]
+    i = (x == g[1]) ? 2 : searchsortedfirst(g, x)
+    (i == 1 || i == length(g)+1) ? error(BoundsError) : _interpu(x, g, i, interptype(G))
+end
+
+_interpu(x, g, i, coefs, ::Type{InterpNearest}) = (x-g[i-1] < g[i]-x) ? coefs[i-1] : coefs[i]
+function _interpu(x, g, i, coefs, ::Type{InterpLinear})
+    f = (x-g[i-1])/(g[i]-g[i-1])
+    (1-f)*coefs[i-1] + f*coefs[i]
+end
 
 # Low-level interpolation interface
 
@@ -630,6 +686,10 @@ boundarycondition{T, BC, IT}(G::InterpGrid{T, BC, IT}) = BC
 interptype{T, BC, IT}(G::InterpGrid{T, BC, IT}) = IT
 ndims(G::InterpGrid) = length(G.x)
 
+eltype{T, BC, IT}(G::InterpUneven{T, BC, IT}) = T
+boundarycondition{T, BC, IT}(G::InterpUneven{T, BC, IT}) = BC
+interptype{T, BC, IT}(G::InterpUneven{T, BC, IT}) = IT
+ndims(G::InterpUneven) = length(G.x)
 
 eltype{T,IT<:InterpType}(ic::InterpGridCoefs{T,IT}) = T
 interptype{IT<:InterpType,T}(ic::InterpGridCoefs{T,IT}) = IT
