@@ -13,9 +13,9 @@ function derivative_numer{T<:Number}(func::Function, x::Array{T}, index::Int, h:
     xp = xsave + h
     xm = xsave - h
     x[index] = xp
-    vp = func(x)
+    vp = func(x...)
     x[index] = xm
-    vm = func(x)
+    vm = func(x...)
     x[index] = xsave
     return (vp-vm)/(xp-xm)
 end

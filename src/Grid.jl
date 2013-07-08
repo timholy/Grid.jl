@@ -1,6 +1,43 @@
 module Grid
-import Base: done, next, start, eltype, getindex, isvalid, ndims, ref, show
+import Base: done, next, start, eltype, getindex, isvalid, ndims, getindex, show, size
 
+export
+# Types
+    BoundaryCondition,
+    BCnil,
+    BCnan,
+    BCna,
+    BCreflect,
+    BCperiodic,
+    BCnearest,
+    BCfill,
+    Counter,
+    InterpGrid,
+    InterpGridCoefs,
+    InterpIrregular,
+    InterpType,
+    InterpNearest,
+    InterpLinear,
+    InterpQuadratic,
+# Functions
+    filledges!,
+    interp,
+    interp_invert!,
+    npoints,
+    pad1,
+    prolong,
+    prolongb,
+    prolong_size,
+    restrict,
+    restrictb,
+    restrict_size,
+    restrict_extrap,
+    set_gradient_coordinate,
+    set_position,
+    set_size,
+    valgrad,
+    wrap
+    
 #### Iterator ####
 # An n-dimensional grid iterator. This allows you to do things in
 # arbitrary dimensions that in fixed dimensions you might do with a
@@ -49,8 +86,6 @@ function done(c::Counter, state)
 end
 next(c::Counter, state) = state, state
 
-export Counter, start, done, next
-
 #### Boundary Conditions ####
 
 abstract BoundaryCondition
@@ -61,7 +96,6 @@ type BCreflect <: BoundaryCondition; end # Reflecting boundary conditions
 type BCperiodic <: BoundaryCondition; end # Periodic boundary conditions
 type BCnearest <: BoundaryCondition; end # Return closest edge element
 type BCfill <: BoundaryCondition; end # Use specified fill value
-export BCnil, BCnan, BCna, BCreflect, BCperiodic, BCnearest, BCfill
 
 # Note: for interpolation, BCna is currently defined to be identical
 # to BCnan. Other applications might define different behavior,
@@ -76,7 +110,6 @@ wrap(::Type{BCreflect}, pos::Int, len::Int) = wraprefl(mod(pos-1, 2*len), len)
 wraprefl(posrem::Int, len::Int) = posrem < len ? posrem+1 : 2*len-posrem
 wrap(::Type{BCperiodic}, pos::Int, len::Int) = mod(pos-1, len) + 1
 wrap{BC<:Union(BCnearest,BCfill)}(::Type{BC}, pos::Int, len::Int) = pos < 1 ? 1 : (pos > len ? len : pos)
-export isvalid, wrap
 
 #### Interpolation of evenly-spaced data ####
 
@@ -89,7 +122,6 @@ type InterpNearest <: InterpType; end
 type InterpLinear <: InterpType; end
 type InterpQuadratic <: InterpType; end
 #type InterpCubic <: InterpType; end   # TODO
-export InterpNearest, InterpLinear, InterpQuadratic
 
 # This type manages temporary storage needed for efficient
 # interpolation on a grid, so that once created it is possible to
@@ -113,93 +145,91 @@ type InterpGridCoefs{T<:FloatingPoint, IT<:InterpType}
     valid::Bool          # some BCs return NaN when wrapping
     coef::Vector{T}      # the N-d coefficient of each neighbor (val & gradient)
 end
-export InterpGridCoefs
 
 #### InterpGrid ####
 # This is the high-level interface. Use this for scalar-valued
 # interpolation, and for calculation of the gradient with respect to
 # the location of the evaluation point.
 # For efficient multi-valued interpolation, use the low-level
-# interface below. (ref and valgrad provide examples of how to use the
+# interface below. (getindex and valgrad provide examples of how to use the
 # low-level interface.)
-type InterpGrid{T<:FloatingPoint, BC<:BoundaryCondition, IT<:InterpType}
-    coefs::Array{T}
+type InterpGrid{T<:FloatingPoint, N, BC<:BoundaryCondition, IT<:InterpType} <: AbstractArray{T,N}
+    coefs::Array{T,N}
     ic::InterpGridCoefs{T, IT}
     x::Vector{T}
     fillval::T  # used only for BCfill (if ever)
 end
-export InterpGrid
 function InterpGrid{T<:FloatingPoint, BC<:BoundaryCondition, IT<:InterpType}(A::Array{T}, ::Type{BC}, ::Type{IT})
     coefs = copy(A)
     interp_invert!(coefs, BC, IT, 1:ndims(A))
 #    println(coefs)
     ic = InterpGridCoefs(coefs, IT)
     x = zeros(T, ndims(A))
-    InterpGrid{T, BC, IT}(coefs, ic, x, nan(T))
+    InterpGrid{T, ndims(A), BC, IT}(coefs, ic, x, nan(T))
 end
 function InterpGrid{T<:FloatingPoint, IT<:InterpType}(A::Array{T}, f::Number, ::Type{IT})
     coefs = pad1(A, f, 1:ndims(A))
     interp_invert!(coefs, BCnearest, IT, 1:ndims(A))
     ic = InterpGridCoefs(coefs, IT)
     x = zeros(T, ndims(A))
-    InterpGrid{T, BCfill, IT}(coefs, ic, x, convert(T, f))
+    InterpGrid{T, ndims(A), BCfill, IT}(coefs, ic, x, convert(T, f))
 end
 
 
-function _ref{T}(G::InterpGrid{T})
-    set_position(G.ic, boundarycondition(G), false, G.x)
-    interp(G.ic, G.coefs)
-end
-function setx(G::InterpGrid, x...)
+setx{T}(G::InterpGrid{T,1}, x::Real) = G.x[1] = x
+function setx{T}(G::InterpGrid{T,2}, x::Real, y::Real)
     xG = G.x
-    N = length(xG)
+    xG[1] = x
+    xG[2] = y
+end
+function setx{T}(G::InterpGrid{T,3}, x::Real, y::Real, z::Real)
+    xG = G.x
+    xG[1] = x
+    xG[2] = y
+    xG[3] = z
+end
+function setx{T,N}(G::InterpGrid{T,N}, x::Real...)
     if length(x) != N
         error("Incorrect number of dimensions supplied")
     end
+    xG = G.x
     for idim = 1:N
         xG[idim] = x[idim]
     end
 end
-setx(G::InterpGrid, x::Vector) = copy!(G.x, x)
-function setxfill(G::InterpGrid, x...)
+# a version that corrects for the padding of BCfill types
+setx{T}(G::InterpGrid{T,1,BCfill}, x::Real) = G.x[1] = x+1
+function setx{T}(G::InterpGrid{T,2}, x::Real, y::Real)
     xG = G.x
-    N = length(xG)
-    if length(x) != N
-        error("Incorrect number of dimensions supplied")
-    end
-    for idim = 1:N
-        xG[idim] = x[idim]+1
-    end
+    xG[1] = x+1
+    xG[2] = y+1
 end
-function setxfill(G::InterpGrid, x::Vector)
+function setx{T}(G::InterpGrid{T,3}, x::Real, y::Real, z::Real)
     xG = G.x
-    N = length(xG)
+    xG[1] = x+1
+    xG[2] = y+1
+    xG[3] = z+1
+end
+function setx{T,N}(G::InterpGrid{T,N,BCfill}, x::Real...)
     if length(x) != N
         error("Incorrect number of dimensions supplied")
     end
+    xG = G.x
     for idim = 1:N
         xG[idim] = x[idim]+1
     end
 end
 
-function ref{T}(G::InterpGrid{T, BCfill}, x::Number...)
-    setxfill(G, x...)
-    _ref(G)
+## Evaluation at single points
+function _getindex{T}(G::InterpGrid{T})
+    set_position(G.ic, boundarycondition(G), false, G.x)
+    interp(G.ic, G.coefs)
 end
-function ref{T}(G::InterpGrid{T, BCfill}, x::Vector{T})
-    setxfill(G, x)
-    _ref(G)
-end
-function ref(G::InterpGrid, x::Number...)
+function getindex(G::InterpGrid, x::Real...)
     setx(G, x...)
-    _ref(G)
+    _getindex(G)
 end
-function ref{T}(G::InterpGrid{T}, x::Vector{T})
-    setx(G, x)
-    _ref(G)
-end
-function _valgrad{T}(g::Vector{T}, G::InterpGrid{T})
-    N = length(G.x)
+function _valgrad{T,N}(g::Vector{T}, G::InterpGrid{T,N})
     if length(g) != N
         error("Wrong number of components for the gradient")
     end
@@ -213,7 +243,7 @@ function _valgrad{T}(g::Vector{T}, G::InterpGrid{T})
     end
     return val
 end
-function _valgrad{T}(G::InterpGrid{T})
+function _valgrad{T}(G::InterpGrid{T,1})
     ic = G.ic
     coefs = G.coefs
     set_position(ic, boundarycondition(G), true, G.x)
@@ -222,79 +252,73 @@ function _valgrad{T}(G::InterpGrid{T})
     g = interp(ic, coefs)
     return val, g
 end
-function valgrad{T}(G::InterpGrid{T, BCfill}, x::Number)
-    if ndims(G) > 1
-        error("Wrong number of dimensions in input")
-    end
-    G.x[1] = x+1
+function valgrad{T}(G::InterpGrid{T,1}, x::Real)
+    setx(G, x)
     _valgrad(G)
 end
-function valgrad{T}(G::InterpGrid{T}, x::Number)
-    if ndims(G) > 1
-        error("Wrong number of dimensions in input")
+function valgrad{T}(G::InterpGrid{T}, x::Real...)
+    setx(G, x...)
+    g = Array(T, length(x))
+    val = _valgrad(g, G)
+    return val, g
+end
+function valgrad{T}(g::Vector{T}, G::InterpGrid{T}, x::Real...)
+    setx(G, x...)
+    _valgrad(g, G)
+end
+
+## Vectorized evaluation at multiple points
+function getindex{T,R<:Real}(G::InterpGrid{T,1}, x::AbstractVector{R})
+    n = length(x)
+    v = Array(T, n)
+    for i = 1:n
+        setx(G, x[i])
+        v[i] = _getindex(G)
     end
-    G.x[1] = x
-    _valgrad(G)
 end
-function valgrad{T}(G::InterpGrid{T, BCfill}, x::Number...)
-    setxfill(G, x)
-    g = Array(T, length(x))
-    val = _valgrad(g, G)
-    return val, g
+getindex{T,N,R<:Real}(G::InterpGrid{T,N}, x::AbstractVector{R}) = error("Linear indexing not supported")
+function getindex{T,R<:Real}(G::InterpGrid{T,2}, x::AbstractVector{R}, y::AbstractVector{R})
+    nx, ny = length(x), length(y)
+    v = Array(T, nx, ny)
+    for i = 1:nx
+        for j = 1:ny
+            setx(G, x[i], y[j])
+            v[i,j] = _getindex(G)
+        end
+    end
 end
-function valgrad{T}(G::InterpGrid{T}, x::Number...)
-    setx(G, x)
-    g = Array(T, length(x))
-    val = _valgrad(g, G)
-    return val, g
+function getindex{T,N,R<:Real}(G::InterpGrid{T,N}, x::AbstractVector{R}, xrest::AbstractVector{R}...)
+    if length(xrest) != N-1
+        error("Dimensionality mismatch")
+    end
+    nx = length(x)
+    nrest = [length(y) for y in xrest]
+    v = Array(T, nx, nrest...)
+    for c in Counter(nrest)
+        for i = 1:nx
+            setx(G, x[i], ntuple(N-1, i->xrest[i][c[i]])...)  # FIXME performance?? May not matter...
+            v[i,c...] = _getindex(G)
+        end
+    end
 end
-function valgrad{T}(g::Vector{T}, G::InterpGrid{T, BCfill}, x::Number...)
-    setxfill(G, x)
-    _valgrad(g, G)
-end
-function valgrad{T}(g::Vector{T}, G::InterpGrid{T}, x::Number...)
-    setx(G, x)
-    _valgrad(g, G)
-end
-function valgrad{T}(G::InterpGrid{T, BCfill}, x::Vector{T})
-    setxfill(G, x)
-    g = Array(T, length(x))
-    val = _valgrad(g, G)
-    return val, g
-end
-function valgrad{T}(G::InterpGrid{T}, x::Vector{T})
-    setx(G, x)
-    g = Array(T, length(x))
-    val = _valgrad(g, G)
-    return val, g
-end
-function valgrad{T}(g::Vector{T}, G::InterpGrid{T, BCfill}, x::Vector{T})
-    setxfill(G, x)
-    _valgrad(g, G)
-end
-function valgrad{T}(g::Vector{T}, G::InterpGrid{T}, x::Vector{T})
-    setx(G, x)
-    _valgrad(g, G)
-end
-export ref, valgrad
+
 
 #### Non-uniform grid interpolation ####
 
 # Currently supports only 1d, nearest-neighbor or linear
 # Consequently, the internal representation may change in the future
 # BCperiodic and BCreflect not supported
-type InterpUneven{T<:FloatingPoint, BC<:BoundaryCondition, IT<:InterpType}
+type InterpIrregular{T<:FloatingPoint, N, BC<:BoundaryCondition, IT<:InterpType} <: AbstractArray{T,N}
     grid::Vector{Vector{T}}
-    coefs::Array{T}
+    coefs::Array{T,N}
     x::Vector{T}
     fillval::T  # used only for BCfill (if ever)
 end
-export InterpUneven
-InterpUneven{T<:FloatingPoint, BC<:BoundaryCondition, IT<:Union(InterpNearest,InterpLinear)}(grid::Vector{T}, A::AbstractVector, ::Type{BC}, ::Type{IT}) =
-    InterpUneven(Vector{T}[grid], A, BC, IT) # special 1d syntax
-InterpUneven{T<:FloatingPoint, BC<:BoundaryCondition, IT<:Union(InterpNearest,InterpLinear)}(grid::(Vector{T}...), A::AbstractVector, ::Type{BC}, ::Type{IT}) =
-    InterpUneven(Vector{T}[grid...], A, BC, IT)
-function InterpUneven{T<:FloatingPoint, BC<:BoundaryCondition, IT<:Union(InterpNearest,InterpLinear)}(grid::Vector{Vector{T}}, A::AbstractArray, ::Type{BC}, ::Type{IT})
+InterpIrregular{T<:FloatingPoint, BC<:BoundaryCondition, IT<:Union(InterpNearest,InterpLinear)}(grid::Vector{T}, A::AbstractVector, ::Type{BC}, ::Type{IT}) =
+    InterpIrregular(Vector{T}[grid], A, BC, IT) # special 1d syntax
+InterpIrregular{T<:FloatingPoint, BC<:BoundaryCondition, IT<:Union(InterpNearest,InterpLinear)}(grid::(Vector{T}...), A::AbstractVector, ::Type{BC}, ::Type{IT}) =
+    InterpIrregular(Vector{T}[grid...], A, BC, IT)
+function InterpIrregular{T<:FloatingPoint, BC<:BoundaryCondition, IT<:Union(InterpNearest,InterpLinear)}(grid::Vector{Vector{T}}, A::AbstractArray, ::Type{BC}, ::Type{IT})
     if length(grid) != 1
         error("Sorry, for now only 1d is supported")
     end
@@ -307,26 +331,28 @@ function InterpUneven{T<:FloatingPoint, BC<:BoundaryCondition, IT<:Union(InterpN
         end
     end
     grid = copy(grid)
-    coefs = T[A]
+    coefs = convert(Array{T}, A)
     x = zeros(T, ndims(A))
-    InterpUneven{T, BC, IT}(grid, coefs, x, nan(T))
+    InterpIrregular{T, ndims(A), BC, IT}(grid, coefs, x, nan(T))
 end
-function InterpUneven{T<:FloatingPoint, IT<:InterpType}(grid, A::Array{T}, f::Number, ::Type{IT})
-    iu = InterpUneven(grid, A, BCfill, IT)
+function InterpIrregular{T<:FloatingPoint, IT<:InterpType}(grid, A::Array{T}, f::Number, ::Type{IT})
+    iu = InterpIrregular(grid, A, BCfill, IT)
     iu.fillval = f
     iu
 end
 
-function getindex{T,BC<:Union(BCfill,BCna,BCnan)}(G::InterpUneven{T,BC}, x::Number)
+function _getindexii{T,BC<:Union(BCfill,BCna,BCnan)}(G::InterpIrregular{T,1,BC}, x::Real)
     g = G.grid[1]
     i = (x == g[1]) ? 2 : searchsortedfirst(g, x)
     (i == 1 || i == length(g)+1) ? G.fillval : _interpu(x, g, i, G.coefs, interptype(G))
 end
-function getindex{T}(G::InterpUneven{T,BCnil}, x::Number)
+function _getindexii{T}(G::InterpIrregular{T,1,BCnil}, x::Real)
     g = G.grid[1]
     i = (x == g[1]) ? 2 : searchsortedfirst(g, x)
     (i == 1 || i == length(g)+1) ? error(BoundsError) : _interpu(x, g, i, interptype(G))
 end
+# This next is necessary for precedence
+getindex(G::InterpIrregular, x::Real) = _getindexii(G, x)
 
 _interpu(x, g, i, coefs, ::Type{InterpNearest}) = (x-g[i-1] < g[i]-x) ? coefs[i-1] : coefs[i]
 function _interpu(x, g, i, coefs, ::Type{InterpLinear})
@@ -460,8 +486,6 @@ function set_size(ic::InterpGridCoefs, dims)
     set_size(ic, dims, s)
 end
 
-export set_position, set_gradient_coordinate, interp, set_size
-
 # strides is supplied separately to allow working with subarrays,
 # and/or specific dimensions. For example, an RGB image might be
 # interpolated with respect to the spatial dimensions but not the
@@ -502,8 +526,6 @@ InterpGridCoefs{IT<:InterpType}(A::Array, ::Type{IT}) = InterpGridCoefs(eltype(A
 npoints(::Type{InterpNearest}) = 1
 npoints(::Type{InterpLinear}) = 2
 npoints(::Type{InterpQuadratic}) = 3
-
-export npoints
 
 # Test whether a given coordinate will yield an interpolated result
 isvalid{BC<:BoundaryCondition,IT<:InterpType}(::Type{BC},::Type{IT}, x, len::Int) = true
@@ -681,15 +703,19 @@ function interp_gcoefs_1d{T,BC<:BoundaryCondition}(coef1d::Vector{T}, ::Type{BC}
     coef1d[3] = dx+0.5
 end
 
-eltype{T, BC, IT}(G::InterpGrid{T, BC, IT}) = T
-boundarycondition{T, BC, IT}(G::InterpGrid{T, BC, IT}) = BC
-interptype{T, BC, IT}(G::InterpGrid{T, BC, IT}) = IT
-ndims(G::InterpGrid) = length(G.x)
+eltype{T, N, BC, IT}(G::InterpGrid{T, N, BC, IT}) = T
+ndims{T, N, BC, IT}(G::InterpGrid{T, N, BC, IT}) = N
+boundarycondition{T, N, BC, IT}(G::InterpGrid{T, N, BC, IT}) = BC
+interptype{T, N, BC, IT}(G::InterpGrid{T, N, BC, IT}) = IT
+size(G::InterpGrid) = size(G.coefs)
+size(G::InterpGrid, i::Integer) = size(G.coefs, i)
 
-eltype{T, BC, IT}(G::InterpUneven{T, BC, IT}) = T
-boundarycondition{T, BC, IT}(G::InterpUneven{T, BC, IT}) = BC
-interptype{T, BC, IT}(G::InterpUneven{T, BC, IT}) = IT
-ndims(G::InterpUneven) = length(G.x)
+eltype{T, N, BC, IT}(G::InterpIrregular{T, N, BC, IT}) = T
+ndims{T, N, BC, IT}(G::InterpIrregular{T, N, BC, IT}) = N
+boundarycondition{T, N, BC, IT}(G::InterpIrregular{T, N, BC, IT}) = BC
+interptype{T, N, BC, IT}(G::InterpIrregular{T, N, BC, IT}) = IT
+size(G::InterpIrregular) = size(G.coefs)
+size(G::InterpIrregular, i::Integer) = size(G.coefs, i)
 
 eltype{T,IT<:InterpType}(ic::InterpGridCoefs{T,IT}) = T
 interptype{IT<:InterpType,T}(ic::InterpGridCoefs{T,IT}) = IT
@@ -727,8 +753,6 @@ function interp_invert!{BC<:BoundaryCondition}(A::Array, ::Type{BC}, ::Type{Inte
 end
 interp_invert!{BC<:Union(BoundaryCondition,Number)}(A::Array, ::Type{BC}, IT) = interp_invert!(A, BC, IT, 1:ndims(A))
 interp_invert!{BC<:Union(BoundaryCondition,Number)}(A::Array, ::Type{BC}, IT, dimlist...) = interp_invert!(A, BC, IT, dimlist)
-
-export interp_invert!
 
 function _interp_invert_matrix{BC<:Union(BCnil,BCnan,BCna),T}(::Type{BC}, ::Type{InterpQuadratic}, dl::Vector{T}, d::Vector{T}, du::Vector{T})
     # For these, the quadratic centered on x=2 is continued down to
@@ -1067,7 +1091,6 @@ function pad1(Ain::AbstractArray, f::Number, dimpad...)
     return A
 end
 
-export pad1
 
 #### Restrict/prolong operators ####
 
@@ -1353,7 +1376,6 @@ function prolongb(A::Array, sz::Array{Int})
     end
     return Ap
 end
-export restrictb, prolongb
 
 # restrict, then "repair" the edges by linear extrapolation
 # Do _not_ use this if you're doing gradient restriction/prolongation,
@@ -1426,7 +1448,6 @@ function prolong_size(szin::Union(Dims, Vector{Int}), flag::Union(Array{Bool},Bi
     return [sz[:,end-1:-1:1] [szin...]]
 end
 
-export restrict, prolong, restrict_size, prolong_size, restrict_extrap
 
 
 ## Utilities
@@ -1462,6 +1483,5 @@ function filledges!(A::Array, val)
         ind[idim] = 1:size(A, idim)
     end
 end
-export filledges!
 
 end # module

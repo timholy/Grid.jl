@@ -80,23 +80,23 @@ end
 y = rand(7,8)
 yi = InterpGrid(y, BCreflect, InterpQuadratic)
 x = [2.2, 3.1]
-v,g = valgrad(yi, x)
-func = x -> yi[x]
+v,g = valgrad(yi, x...)
+func = (x1,x2) -> yi[x1,x2]
 gnum = derivative_numer(func, x, 1)
 @assert abs(g[1]-gnum) < Eps*(abs(g[1])+abs(gnum))
 gnum = derivative_numer(func, x, 2)
 @assert abs(g[2]-gnum) < Eps*(abs(g[2])+abs(gnum))
 
-#### Interpolation on uneven grids ####
+#### Interpolation on irregularly-spaced grids ####
 x = [100.0,110.0,150.0]
 y = rand(3)
-iu = InterpUneven(x, y, -200, InterpNearest)
+iu = InterpIrregular(x, y, -200, InterpNearest)
 @assert iu[99] == -200
 @assert iu[101] == y[1]
 @assert iu[106] == y[2]
 @assert iu[149] == y[3]
 @assert iu[150.1] == -200
-iu = InterpUneven(x, y, BCna, InterpLinear)
+iu = InterpIrregular(x, y, BCna, InterpLinear)
 @assert isnan(iu[99])
 @assert iu[101] == 0.9*y[1] + 0.1*y[2]
 @assert iu[106] == 0.4*y[1] + 0.6*y[2]
