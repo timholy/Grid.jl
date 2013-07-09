@@ -37,6 +37,20 @@ for n_dims = 1:4
     @assert ic.coef == coefs_generic
 end
 
+# On-grid values
+A = randn(4,10)
+const EPS = sqrt(eps())
+for bc in (BCnil, BCnan, BCna, BCreflect, BCperiodic, BCnearest, BCfill)
+    for it in (InterpNearest, InterpLinear, InterpQuadratic)
+        ig = bc == BCfill ? InterpGrid(A, 0.0, it) : InterpGrid(A, bc, it)
+        for i = 1:size(A,1)
+            for j = 1:size(A,2)
+                @assert abs(ig[i,j] - A[i,j]) < EPS
+            end
+        end
+    end
+end
+
 # Quadratic interpolation
 c = 2.3
 a = 8.1
@@ -98,9 +112,9 @@ iu = InterpIrregular(x, y, -200, InterpNearest)
 @assert iu[150.1] == -200
 iu = InterpIrregular(x, y, BCna, InterpLinear)
 @assert isnan(iu[99])
-@assert iu[101] == 0.9*y[1] + 0.1*y[2]
-@assert iu[106] == 0.4*y[1] + 0.6*y[2]
-@assert iu[149] == y[2]/40 + (39/40)*y[3]
+@assert abs(iu[101] - (0.9*y[1] + 0.1*y[2])) < Eps
+@assert abs(iu[106] - (0.4*y[1] + 0.6*y[2])) < Eps
+@assert abs(iu[149] - (y[2]/40 + (39/40)*y[3])) < Eps
 @assert isnan(iu[150.1])
 
 
