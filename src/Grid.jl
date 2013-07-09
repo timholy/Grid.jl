@@ -1,5 +1,5 @@
 module Grid
-import Base: done, next, start, eltype, getindex, isvalid, ndims, getindex, show, size
+import Base: done, next, start, convert, eltype, getindex, isvalid, ndims, show, size
 
 export
 # Types
@@ -199,12 +199,12 @@ function setx{T,N}(G::InterpGrid{T,N}, x::Real...)
 end
 # a version that corrects for the padding of BCfill types
 setx{T}(G::InterpGrid{T,1,BCfill}, x::Real) = G.x[1] = x+1
-function setx{T}(G::InterpGrid{T,2}, x::Real, y::Real)
+function setx{T}(G::InterpGrid{T,2,BCfill}, x::Real, y::Real)
     xG = G.x
     xG[1] = x+1
     xG[2] = y+1
 end
-function setx{T}(G::InterpGrid{T,3}, x::Real, y::Real, z::Real)
+function setx{T}(G::InterpGrid{T,3,BCfill}, x::Real, y::Real, z::Real)
     xG = G.x
     xG[1] = x+1
     xG[2] = y+1
