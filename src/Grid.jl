@@ -457,9 +457,10 @@ function interp(ic::InterpGridCoefs, A::AbstractArray, index::Int)
         offset = ic.offset
         index += ic.offset_base
     end
-    val = coef[1]*A[offset[1]+index]
-    for i = 2:length(coef)
-        val += coef[i]*A[offset[i]+index]
+    val = zero(eltype(ic))
+    for i = 1:length(coef)
+        c = coef[i]
+        val += c != 0 ? c*A[offset[i]+index] : 0
     end
     return convert(eltype(A), val)
 end
