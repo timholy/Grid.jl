@@ -160,9 +160,11 @@ type InterpGrid{T<:FloatingPoint, N, BC<:BoundaryCondition, IT<:InterpType} <: A
     fillval::T  # used only for BCfill (if ever)
 end
 function InterpGrid{T<:FloatingPoint, BC<:BoundaryCondition, IT<:InterpType}(A::Array{T}, ::Type{BC}, ::Type{IT})
+    if BC == BCfill
+        error("Construct BCfill InterpGrids by supplying the fill value")
+    end
     coefs = copy(A)
     interp_invert!(coefs, BC, IT, 1:ndims(A))
-#    println(coefs)
     ic = InterpGridCoefs(coefs, IT)
     x = zeros(T, ndims(A))
     InterpGrid{T, ndims(A), BC, IT}(coefs, ic, x, nan(T))
