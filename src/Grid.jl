@@ -549,7 +549,7 @@ end
 function interp_coords_1d{BC<:BoundaryCondition}(coord1d::Vector{Int}, ::Type{BC}, ::Type{InterpNearest}, x, len::Int)
     ix = wrap(BC, iround(x), len)
     coord1d[1] = ix
-    return ix, 0, false
+    return ix, zero(typeof(x)), false
 end
 
 # version for offsets
