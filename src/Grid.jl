@@ -303,6 +303,10 @@ function getindex{T,N,R<:Real}(G::InterpGrid{T,N}, x::AbstractVector{R}, xrest::
 end
 
 
+# This should work for the convert in the InterpIrregular constructor below,
+# but for some reason it does not
+#convert{T,S}(::Type{Array{T,1}}, r::Ranges{S}) = [convert(T, x) for x in r]
+
 #### Non-uniform grid interpolation ####
 
 # Currently supports only 1d, nearest-neighbor or linear
@@ -331,7 +335,8 @@ function InterpIrregular{T<:FloatingPoint, BC<:BoundaryCondition, IT<:Union(Inte
         end
     end
     grid = copy(grid)
-    coefs = convert(Array{T}, A)
+    coefs = Array(T, size(A))
+    copy!(coefs, A)
     x = zeros(T, ndims(A))
     InterpIrregular{T, ndims(A), BC, IT}(grid, coefs, x, nan(T))
 end
