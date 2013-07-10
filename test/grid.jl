@@ -96,9 +96,9 @@ yi = InterpGrid(y, BCreflect, InterpQuadratic)
 x = [2.2, 3.1]
 v,g = valgrad(yi, x...)
 func = (x1,x2) -> yi[x1,x2]
-gnum = derivative_numer(func, x, 1)
+gnum = derivative_numer(func, tuple(x...), 1)
 @assert abs(g[1]-gnum) < Eps*(abs(g[1])+abs(gnum))
-gnum = derivative_numer(func, x, 2)
+gnum = derivative_numer(func, tuple(x...), 2)
 @assert abs(g[2]-gnum) < Eps*(abs(g[2])+abs(gnum))
 
 #### Interpolation on irregularly-spaced grids ####

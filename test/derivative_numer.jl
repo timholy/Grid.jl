@@ -13,6 +13,18 @@ function derivative_numer{T<:Number}(func::Function, x::Array{T}, index::Int, h:
     xp = xsave + h
     xm = xsave - h
     x[index] = xp
+    vp = func(x)
+    x[index] = xm
+    vm = func(x)
+    x[index] = xsave
+    return (vp-vm)/(xp-xm)
+end
+function derivative_numer{T<:Number}(func::Function, c::(T...,), index::Int, h::T)
+    x = [c...]
+    xsave = x[index]
+    xp = xsave + h
+    xm = xsave - h
+    x[index] = xp
     vp = func(x...)
     x[index] = xm
     vm = func(x...)
@@ -35,3 +47,4 @@ function derivative_numer{T<:Number}(func::Function, x, index::Int, h::Vector{T}
 end
 derivative_numer{T<:Number}(func::Function, x::T) = derivative_numer(func, x, (eps(max(abs(x),one(T))))^convert(T, 1/3))
 derivative_numer{T<:Number}(func::Function, x::Array{T}, index::Int) = derivative_numer(func, x, index, (eps(max(abs(x[index]),one(T))))^convert(T, 1/3))
+derivative_numer{T<:Number}(func::Function, c::(T...,), index::Int) = derivative_numer(func, c, index, (eps(max(abs(c[index]),one(T))))^convert(T, 1/3))
