@@ -1161,11 +1161,11 @@ function prolong{T}(A::Array{T}, dim::Integer, len::Integer)
     sz[dim] = 1   # prolonged dimension is handled directly
     if isodd(len)
         for indices = Counter(sz)
-            iA = sum((indices-1).*sA)+1
-            iP = sum((indices-1).*sP)+1
+            iA = coords2lin(indices, sA)
+            iP = coords2lin(indices, sP)
             for i = 1:n-1
                 P[iP] = A[iA]
-                P[iP+skipP] = (A[iA] + A[iA+skipA])/2
+                P[iP+skipP] = lincomb(0.5, A[iA], 0.5, A[iA+skipA])
                 iA += skipA
                 iP += 2*skipP
             end
@@ -1173,11 +1173,11 @@ function prolong{T}(A::Array{T}, dim::Integer, len::Integer)
         end
     else
         for indices = Counter(sz)
-            iA = sum((indices-1).*sA)+1
-            iP = sum((indices-1).*sP)+1
+            iA = coords2lin(indices, sA)
+            iP = coords2lin(indices, sP)
             for i = 1:n-1
-                P[iP] = (3*A[iA] + A[iA+skipA])/4
-                P[iP+skipP] = (A[iA] + 3*A[iA+skipA])/4
+                P[iP] = lincomb(0.75, A[iA], 0.25, A[iA+skipA])
+                P[iP+skipP] = lincomb(0.25, A[iA], 0.75, A[iA+skipA])
                 iA += skipA
                 iP += 2*skipP
             end
@@ -1253,28 +1253,28 @@ function restrict{T}(A::Array{T}, dim::Integer, scale::Real)
     sz[dim] = 1
     if isodd(size(A, dim))
         for indices = Counter(sz)
-            iA = sum((indices-1).*sA)+1
-            iR = sum((indices-1).*sR)+1
-            R[iR] = scale*(A[iA] + 0.5*A[iA+skipA])
+            iA = coords2lin(indices, sA)
+            iR = coords2lin(indices, sR)
+            R[iR] = lincomb(scale, A[iA], scale/2, A[iA+skipA])
             for i = 2:n-1
                 iA += 2*skipA
                 iR += skipR
-                R[iR] = scale*(0.5*A[iA-skipA] + A[iA] + 0.5*A[iA+skipA])
+                R[iR] = lincomb(scale/2, A[iA-skipA], scale, A[iA], scale/2, A[iA+skipA])
             end
-            R[iR+skipR] = scale*(0.5*A[iA+skipA] + A[iA+2*skipA])
+            R[iR+skipR] = lincomb(scale/2, A[iA+skipA], scale, A[iA+2*skipA])
         end
     else
         for indices = Counter(sz)
-            iA = sum((indices-1).*sA)+1
-            iR = sum((indices-1).*sR)+1
-            R[iR] = (0.75*scale)*A[iA] + (0.25*scale)*A[iA+skipA]
+            iA = coords2lin(indices, sA)
+            iR = coords2lin(indices, sR)
+            R[iR] = lincomb(0.75*scale, A[iA], 0.25*scale, A[iA+skipA])
             iR += skipR
             for i = 2:n-1
-                R[iR] = (0.25*scale)*A[iA] + (0.75*scale)*A[iA+skipA] + (0.75*scale)*A[iA+2*skipA] + (0.25*scale)*A[iA+3*skipA]
+                R[iR] = lincomb(0.25*scale, A[iA], 0.75*scale, A[iA+skipA], 0.75*scale, A[iA+2*skipA], 0.25*scale, A[iA+3*skipA])
                 iR += skipR
                 iA += 2*skipA
             end
-            R[iR] = (0.25*scale)*A[iA] + (0.75*scale)*A[iA+skipA]
+            R[iR] = lincomb(0.25*scale, A[iA], 0.75*scale, A[iA+skipA])
         end
     end
     return R
@@ -1490,6 +1490,44 @@ function filledges!(A::Array, val)
         A[to_tuple(ind)...] = val
         ind[idim] = 1:size(A, idim)
     end
+end
+
+# Devectorized linear combinations
+lincomb(coef1, A1, coef2, A2) = coef1*A1 + coef2*A2
+lincomb(coef1, A1, coef2, A2, coef3, A3) = coef1*A1 + coef2*A2 + coef3*A3
+lincomb(coef1, A1, coef2, A2, coef3, A3, coef4, A4) = coef1*A1 + coef2*A2 + coef3*A3 + coef4*A4
+function lincomb(coef1::Number, A1::AbstractArray, coef2::Number, A2::AbstractArray)
+    out = similar(A1)
+    for i = 1:length(A1)
+        out[i] = coef1*A1[i] + coef2*A2[i]
+    end
+    out
+end
+
+function lincomb(coef1::Number, A1::AbstractArray, coef2::Number, A2::AbstractArray, coef3::Number, A3::AbstractArray)
+    out = similar(A1)
+    for i = 1:length(A1)
+        out[i] = coef1*A1[i] + coef2*A2[i] + coef3*A3[i]
+    end
+    out
+end
+
+function lincomb(coef1::Number, A1::AbstractArray, coef2::Number, A2::AbstractArray, coef3::Number, A3::AbstractArray, coef4::Number, A4::AbstractArray)
+    out = similar(A1)
+    for i = 1:length(A1)
+        out[i] = coef1*A1[i] + coef2*A2[i] + coef3*A3[i] + coef4*A4[i]
+    end
+    out
+end
+
+
+# Converting coordinates to linear indices
+function coords2lin(c, strides)
+    ind = 1
+    for i = 1:length(c)
+        ind += (c[i]-1)*strides[i]
+    end
+    ind
 end
 
 end # module
