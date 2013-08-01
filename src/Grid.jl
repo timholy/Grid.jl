@@ -753,7 +753,7 @@ function interp_invert!{BC<:BoundaryCondition}(A::Array, ::Type{BC}, ::Type{Inte
         M = _interp_invert_matrix(BC, InterpQuadratic, dl, d, du)
         sizeA[idim] = 1  # don't iterate over the dimension we're solving on
         for cc in Counter(sizeA)
-            rng = Range(sum((cc-1).*stridesA) + 1, stridesA[idim], n)
+            rng = Range(coords2lin(cc, stridesA), stridesA[idim], n)
             solve(A, rng, M, A, rng) # in-place
         end
         sizeA[idim] = size(A, idim)
@@ -1122,8 +1122,8 @@ function prolong{T<:LapackScalar}(A::Array{T}, dim::Integer, len::Integer)
     if isodd(len)
         # Copy on-grid, and interpolate at half-grid points
         for indices = Counter(sz)
-            startA = sum((indices-1).*sA)+1
-            startP = sum((indices-1).*sP)+1
+            startA = coords2lin(indices, sA)
+            startP = coords2lin(indices, sP)
             # handle the on-grid points
             copy!(P, Range(startP, 2*skipP, n), A, Range(startA, skipA, n))
             # handle the off-grid points (linear interpolation)
@@ -1134,8 +1134,8 @@ function prolong{T<:LapackScalar}(A::Array{T}, dim::Integer, len::Integer)
     else
         # Interpolate at 1/4 and 3/4 points
         for indices = Counter(sz)
-            startA = sum((indices-1).*sA)+1
-            startP = sum((indices-1).*sP)+1
+            startA = coords2lin(indices, sA)
+            startP = coords2lin(indices, sP)
             rA1 = Range(startA, skipA, n-1)
             rA2 = Range(startA+skipA, skipA, n-1)
             rP1 = Range(startP, 2*skipP, n-1)
@@ -1214,8 +1214,8 @@ function restrict{T<:LapackScalar}(A::Array{T}, dim::Integer, scale::Real)
     sz[dim] = 1
     if isodd(size(A, dim))
         for indices = Counter(sz)
-            startA = sum((indices-1).*sA)+1
-            startR = sum((indices-1).*sR)+1
+            startA = coords2lin(indices, sA)
+            startR = coords2lin(indices, sR)
             Base.LinAlg.BLAS.axpy!(scale, A, Range(startA, 2*skipA, n), R, Range(startR, skipR, n))
             rA = Range(startA+skipA, 2*skipA, n-1)
             rR = Range(startR, skipR, n-1)
@@ -1225,8 +1225,8 @@ function restrict{T<:LapackScalar}(A::Array{T}, dim::Integer, scale::Real)
         end
     else
         for indices = Counter(sz)
-            startA = sum((indices-1).*sA)+1
-            startR = sum((indices-1).*sR)+1
+            startA = coords2lin(indices, sA)
+            startR = coords2lin(indices, sR)
             rA = Range(startA, 2*skipA, n-1)
             rR = Range(startR, skipR, n-1)
             Base.LinAlg.BLAS.axpy!(0.75*scale, A, rA, R, rR)
@@ -1310,8 +1310,8 @@ function restrictb{T}(A::Array{T}, dim::Integer, scale::Real)
         b = scale/sqrt(3)
         a = 2*b
         for indices = Counter(sz)
-            index = sum((indices-1).*s)+1
-            indexr = sum((indices-1).*sr)+1
+            index = coords2lin(indices, s)
+            indexr = coords2lin(indices, sr)
             Ar[indexr] = a*A[index] + b*A[index+Astep]
             Ar[indexr+offset_endr] = a*A[index+offset_end] + b*A[index+offset_end-Astep]
         end
@@ -1319,8 +1319,8 @@ function restrictb{T}(A::Array{T}, dim::Integer, scale::Real)
         b = scale/(2*sqrt(2))
         a = 3*b
         for indices = Counter(sz)
-            index = sum((indices-1).*s)+1
-            indexr = sum((indices-1).*sr)+1
+            index = coords2lin(indices, s)
+            indexr = coords2lin(indices, sr)
             Ar[indexr] = a*A[index] + b*A[index+Astep]
             Ar[indexr+offset_endr] = a*A[index+offset_end] + b*A[index+offset_end-Astep]
         end
@@ -1349,8 +1349,8 @@ function prolongb{T}(A::Array{T}, dim::Integer, len::Integer)
         b = 1/sqrt(3)
         a = 2*b
         for indices = Counter(sz)
-            index = sum((indices-1).*s)+1
-            indexp = sum((indices-1).*sp)+1
+            index = coords2lin(indices, s)
+            indexp = coords2lin(indices, sp)
             Ap[indexp] = a*A[index]
             Ap[indexp+Apstep] = b*A[index] + A[index+Astep]/2
             Ap[indexp+offset_endp] = a*A[index+offset_end]
@@ -1360,8 +1360,8 @@ function prolongb{T}(A::Array{T}, dim::Integer, len::Integer)
         b = 1/(2*sqrt(2))
         a = 3*b
         for indices = Counter(sz)
-            index = sum((indices-1).*s)+1
-            indexp = sum((indices-1).*sp)+1
+            index = coords2lin(indices, s)
+            indexp = coords2lin(indices, sp)
             Ap[indexp] = a*A[index] + A[index+Astep]/4
             Ap[indexp+Apstep] = b*A[index] + (3/4)*A[index+Astep]
             Ap[indexp+offset_endp] = a*A[index+offset_end] + A[index+offset_end-Astep]/4
@@ -1399,15 +1399,15 @@ function restrict_extrap(A::Array, dim::Integer, scale::Real)
     offset_endr = (size(Ar,dim)-1)*sr[dim]
     if isodd(size(A,dim))
         for indices = Counter(sz)
-            index = sum((indices-1).*s)+1
-            indexr = sum((indices-1).*sr)+1
+            index = coords2lin(indices, s)
+            indexr = coords2lin(indices, sr)
             Ar[indexr] = (2*scale)*A[index]
             Ar[indexr+offset_endr] = (2*scale)*A[index+offset_end]
         end
     else
         for indices = Counter(sz)
-            index = sum((indices-1).*s)+1
-            indexr = sum((indices-1).*sr)+1
+            index = coords2lin(indices, s)
+            indexr = coords2lin(indices, sr)
             Ar[indexr] = (3*scale)*A[index] - scale*A[index+s[dim]]
             Ar[indexr+offset_endr] = (3*scale)*A[index+offset_end] - scale*A[index+offset_end-s[dim]]
         end
