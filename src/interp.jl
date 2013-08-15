@@ -1,3 +1,4 @@
+import Base: eltype, getindex, isvalid, ndims, show, size
 
 #### Interpolation of evenly-spaced data ####
 

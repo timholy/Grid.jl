@@ -1,3 +1,5 @@
+import Base: isvalid
+
 #### Boundary Conditions ####
 
 abstract BoundaryCondition

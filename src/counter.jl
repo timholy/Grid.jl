@@ -1,3 +1,5 @@
+import Base: done, next, start
+
 #### Iterator ####
 # An n-dimensional grid iterator. This allows you to do things in
 # arbitrary dimensions that in fixed dimensions you might do with a

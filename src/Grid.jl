@@ -1,5 +1,4 @@
 module Grid
-import Base: done, next, start, convert, eltype, getindex, isvalid, ndims, show, size
 
 include("counter.jl")
 include("boundaryconditions.jl")
