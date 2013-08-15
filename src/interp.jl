@@ -159,6 +159,7 @@ function getindex{T,R<:Real}(G::InterpGrid{T,1}, x::AbstractVector{R})
         setx(G, x[i])
         v[i] = _getindex(G)
     end
+    v
 end
 getindex{T,N,R<:Real}(G::InterpGrid{T,N}, x::AbstractVector{R}) = error("Linear indexing not supported")
 function getindex{T,R<:Real}(G::InterpGrid{T,2}, x::AbstractVector{R}, y::AbstractVector{R})
