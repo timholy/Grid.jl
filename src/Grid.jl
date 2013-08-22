@@ -4,7 +4,7 @@ include("counter.jl")
 include("boundaryconditions.jl")
 include("interpflags.jl")
 include("interp.jl")
-include("register_prolong.jl")
+include("restrict_prolong.jl")
 include("utilities.jl")
 
 export
