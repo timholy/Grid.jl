@@ -21,7 +21,7 @@ import Base: done, next, start
 type Counter
     max::Vector{Int}
 end
-Counter(sz) = Counter(Int[sz...])
+Counter(sz::Tuple) = Counter(Int[sz...])
 
 function start(c::Counter)
     N = length(c.max)
