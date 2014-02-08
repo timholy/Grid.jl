@@ -642,6 +642,7 @@ function interp_invert!{BC<:BoundaryCondition}(A::Array, ::Type{BC}, ::Type{Inte
         end
         sizeA[idim] = size(A, idim)
     end
+    A
 end
 interp_invert!{BC<:Union(BoundaryCondition,Number)}(A::Array, ::Type{BC}, IT) = interp_invert!(A, BC, IT, 1:ndims(A))
 interp_invert!{BC<:Union(BoundaryCondition,Number)}(A::Array, ::Type{BC}, IT, dimlist...) = interp_invert!(A, BC, IT, dimlist)
