@@ -14,7 +14,7 @@ import Base: eltype, getindex, isvalid, ndims, show, size
 # position of evaluation.
 # An example of multi-valued interpolation is sub-pixel interpolation
 # within an RGB image, and getting the 3 color values out.
-type InterpGridCoefs{T<:FloatingPoint, IT<:InterpType}
+type InterpGridCoefs{T, IT<:InterpType}
     coord1d::Vector{Vector{Int}}  # for 1-d positions
     coef1d::Vector{Vector{T}}     # for 1-d coefficients
     gcoef1d::Vector{Vector{T}}    # for 1-d coefficients of the gradient
@@ -382,7 +382,7 @@ end
 # and/or specific dimensions. For example, an RGB image might be
 # interpolated with respect to the spatial dimensions but not the
 # dimension that holds color.
-function InterpGridCoefs{T<:FloatingPoint,IT<:InterpType}(::Type{T}, ::Type{IT}, dims::Union(Dims,Vector{Int}), strides::Union(Dims,Vector{Int}))
+function InterpGridCoefs{T,IT<:InterpType}(::Type{T}, ::Type{IT}, dims::Union(Dims,Vector{Int}), strides::Union(Dims,Vector{Int}))
     N = length(strides)
     if length(dims) != N
         error("Length of dims and strides must match")
@@ -432,7 +432,7 @@ function interp_coords_1d(coord1d::Vector{Int}, ::Type{InterpNearest})
 end
 # version for indices
 function interp_coords_1d{BC<:BoundaryCondition}(coord1d::Vector{Int}, ::Type{BC}, ::Type{InterpNearest}, x, len::Int)
-    ix = wrap(BC, iround(x), len)
+    ix = wrap(BC, iround(real(x)), len)
     coord1d[1] = ix
     return ix, zero(typeof(x)), false
 end
@@ -482,7 +482,7 @@ function interp_coords_1d(coord1d::Vector{Int}, ::Type{InterpQuadratic})
 end
 # versions for indices
 function interp_coords_1d{BC<:BoundaryCondition}(coord1d::Vector{Int}, ::Type{BC}, ::Type{InterpQuadratic}, x, len::Int)
-    ix = iround(x)
+    ix = iround(real(x))
     dx = x-ix
     ix = wrap(BC, ix, len)
     coord1d[2] = ix
@@ -500,7 +500,7 @@ end
 # BCnil, Bnan, BCna: for 1 <= x <= 1.5, continue the quadratic centered at x=2
 function interp_coords_1d{BC<:Union(BCnil,BCnan,BCna)}(coord1d::Vector{Int}, ::Type{BC}, ::Type{InterpQuadratic}, x, len::Int)
     if x > 1.5 && x+0.5 < len
-        ix = iround(x)
+        ix = iround(real(x))
     elseif x <= 1.5
         ix = 2
     else
@@ -515,7 +515,7 @@ end
 # BCnearest & BCfill: for 1 <= x <= 1.5, ensure the slope tends to 0 at x=1
 function interp_coords_1d{T,BC<:Union(BCnearest,BCfill)}(coord1d::Vector{Int}, ::Type{BC}, ::Type{InterpQuadratic}, x::T, len::Int)
     if x > 1.5 && x+0.5 < len
-        ix = iround(x)
+        ix = iround(real(x))
         coord1d[1] = ix-1
         coord1d[2] = ix
         coord1d[3] = ix+1
@@ -547,7 +547,7 @@ function interp_coords_1d{T,BC<:Union(BCnearest,BCfill)}(coord1d::Vector{Int}, :
     return ix, dx, iswrap
 end
 function interp_coords_1d(coord1d::Vector{Int}, ::Type{BCreflect}, ::Type{InterpQuadratic}, x, len::Int)
-    ix = iround(x)
+    ix = iround(real(x))
     dx = x-ix
     ix = mod(ix-1, 2*len)
     if ix < len
