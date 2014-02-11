@@ -1,5 +1,10 @@
 module Grid
 
+const mp = module_parent(Grid)
+if isdefined(mp, :Images) && isdefined(mp.Images, :restrict)
+    import ..Images.restrict
+end
+
 include("counter.jl")
 include("boundaryconditions.jl")
 include("interpflags.jl")
