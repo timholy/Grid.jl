@@ -1,5 +1,7 @@
 import Base: eltype, getindex, isvalid, ndims, show, size
 
+solve! = isdefined(Base.LinAlg, :solve!) ? Base.LinAlg.solve! : Base.LinAlg.solve
+
 #### Interpolation of evenly-spaced data ####
 
 # This implements "generalized interpolation." See, for example,
@@ -638,7 +640,7 @@ function interp_invert!{BC<:BoundaryCondition}(A::Array, ::Type{BC}, ::Type{Inte
         sizeA[idim] = 1  # don't iterate over the dimension we're solving on
         for cc in Counter(sizeA)
             rng = Range(coords2lin(cc, stridesA), stridesA[idim], n)
-            Base.LinAlg.solve!(A, rng, M, A, rng) # in-place
+            solve!(A, rng, M, A, rng) # in-place
         end
         sizeA[idim] = size(A, idim)
     end
