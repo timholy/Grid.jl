@@ -247,7 +247,6 @@ end
 function _getindexii{T}(G::InterpIrregular{T,1,BCnearest}, x::Real)
     g = G.grid[1]
     i = (x == g[1]) ? 2 : searchsortedfirst(g, x)
-    # g[1] is not correct here...
     i == 1 ? G.coefs[1] : i == length(g)+1 ? G.coefs[end] : _interpu(x, g, i, G.coefs, interptype(G))
 end
 # This next is necessary for precedence
