@@ -5,6 +5,10 @@ if isdefined(mp, :Images) && isdefined(mp.Images, :restrict)
     import ..Images.restrict
 end
 
+if !isdefined(:range)
+    range = Range
+end
+
 include("counter.jl")
 include("boundaryconditions.jl")
 include("interpflags.jl")
