@@ -644,7 +644,7 @@ function interp_invert!{BC<:BoundaryCondition}(A::Array, ::Type{BC}, ::Type{Inte
         M = _interp_invert_matrix(BC, InterpQuadratic, dl, d, du)
         sizeA[idim] = 1  # don't iterate over the dimension we're solving on
         for cc in Counter(sizeA)
-            rng = Range(coords2lin(cc, stridesA), stridesA[idim], n)
+            rng = range(coords2lin(cc, stridesA), stridesA[idim], n)
             solve!(A, rng, M, A, rng) # in-place
         end
         sizeA[idim] = size(A, idim)
@@ -969,7 +969,7 @@ end
 function pad1_index(szt::Tuple, dimpad)
     szv = [szt...]
     for i in dimpad
-        szv[i] += 2
+        szv[i] = szv[i].+2
     end
     N = length(szt)
     ind = cell(N)

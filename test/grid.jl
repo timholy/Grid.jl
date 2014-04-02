@@ -12,7 +12,7 @@ set_position(ic, BCnearest, true, x)
 @assert ic.coord1d == Vector{Int}[[1,2,3],[3,4,5]]
 @assert ic.coef1d == Vector{Float64}[[1/8,3/4,1/8],[1/2,1/2,0]]
 @assert ic.wrap == false
-z[ic.offset+ic.offset_base+1] = ic.coef
+z[ic.offset.+ic.offset_base.+1] = ic.coef
 @assert z == [0 0 1/16 1/16 0 0; 0 0 3/8 3/8 0 0; 0 0 1/16 1/16 0 0; 0 0 0 0 0 0]
 # Test that the generic coef algorithm gives the same result as the
 # dimension-specialized versions
@@ -24,12 +24,12 @@ for n_dims = 1:4
         s[idim+1] = dims[idim]*s[idim]
     end
     ic = InterpGridCoefs(Float64, InterpQuadratic, dims, s)
-    x = rand(n_dims) + 1.5
+    x = rand(n_dims) .+ 1.5
     x[x .== 2.5] = 2.49999
     set_position(ic, BCnearest, true, x)
     @assert ic.wrap == false
-    @assert abs(ic.coef[iceil(length(ic.coef)/2)] - prod(3/4-(x-2).^2)) < eps()
-    index = ic.offset+ic.offset_base+1
+    @assert abs(ic.coef[iceil(length(ic.coef)/2)] .- prod(3/4.-(x.-2).^2)) < eps()
+    index = ic.offset.+ic.offset_base.+1
     indices_generic = similar(index)
     coefs_generic = similar(ic.coef)
     Grid.interp_index_coef_generic(indices_generic, coefs_generic, ic.coord1d, ic.coef1d, s)
@@ -55,7 +55,7 @@ end
 c = 2.3
 a = 8.1
 o = 1.6
-qfunc = x -> a*(x-c).^2 + o
+qfunc = x -> a*(x.-c).^2 .+ o
 xg = Float64[1:5]
 y = qfunc(xg)
 yc = copy(y)
