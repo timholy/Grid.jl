@@ -50,9 +50,9 @@ end
 function prolong{T}(A::Array{T}, dim::Integer, len::Integer)
     sz = [size(A)...]
     sz[dim] = prolong_size(sz[dim], len)
-    P = Array(T, to_tuple(sz))
     sA = [strides(A)...]
     skipA = sA[dim]
+    P = Array(typeof(0.5*A[1]+0.5*A[1+skipA]), to_tuple(sz))
     sP = [strides(P)...]
     skipP = sP[dim]
     n = size(A, dim)
@@ -142,9 +142,9 @@ end
 function restrict{T}(A::Array{T}, dim::Integer, scale::Real)
     sz = [size(A)...]
     sz[dim] = restrict_size(sz[dim])
-    R = Array(eltype(A), to_tuple(sz))
     sA = [strides(A)...]
     skipA = sA[dim]
+    R = Array(typeof(0.5*A[1]+0.5*A[1+skipA]), to_tuple(sz))
     sR = [strides(R)...]
     skipR = sR[dim]
     n = sz[dim]
