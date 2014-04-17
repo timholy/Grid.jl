@@ -1,6 +1,4 @@
-import Base: eltype, getindex, isvalid, ndims, show, size
-
-solve! = isdefined(Base.LinAlg, :solve!) ? Base.LinAlg.solve! : Base.LinAlg.solve
+import Base: copy!, eltype, getindex, isvalid, length, ndims, setindex!, show, size
 
 #### Interpolation of evenly-spaced data ####
 
@@ -625,6 +623,36 @@ show(io::IO, ic::InterpGridCoefs) = print(io, "InterpGridCoefs{", eltype(ic), ",
 # Generalized interpolation of higher order than InterpLinear requires
 # inversion of the interpolation operator. See, for example, the
 # Thevanez citation above.
+
+# We need efficient 1d slices:
+immutable Slice1D{T,N} <: DenseArray{T,1}
+    A::Array{T,N}
+    index::StepRange{Int,Int}
+end
+size(S::Slice1D) = (length(S.index),)
+size(S::Slice1D, d) = d==1 ? length(S.index) : 1
+length(S::Slice1D) = length(S.index)
+
+# Note: unsafe, no bounds-checking implemented
+getindex{T}(S::Slice1D{T}, i::Real) = S.A[first(S.index)+(i-1)*step(S.index)]
+getindex{T}(S::Slice1D{T}, i::Real, j::Real) = S[i]  # assume j=1, because a bounds-check will make it too slow
+setindex!{T}(S::Slice1D{T}, x, i::Real) = (setindex!(S.A, x, first(S.index)+(i-1)*step(S.index)); S)
+setindex!{T}(S::Slice1D{T}, x, i::Real, j::Real) = setindex!(S, x, i)
+
+function copy!(dst::Vector, src::Slice1D)
+    n = length(src)
+    length(dst) == n || throw(DimensionMismatch("Length $(length(dst)) of destination does not equal length $n of source"))
+    p = src.A
+    rng = src.index
+    j = first(rng)
+    s = step(rng)
+    for i = 1:n
+        @inbounds dst[i] = p[j]
+        j += s
+    end
+    dst
+end
+
 const Q3inv = [7/8 1/4 -1/8; -1/8 5/4 -1/8; -1/8 1/4 7/8] # for handling "snippets" of size 3 along each dimension (InterpQuadratic)
 # This works in place. If instead it allocated the output for you, then
 # calling multiple times (e.g., to apply inversions for different
@@ -645,7 +673,7 @@ function interp_invert!{BC<:BoundaryCondition}(A::Array, ::Type{BC}, ::Type{Inte
         sizeA[idim] = 1  # don't iterate over the dimension we're solving on
         for cc in Counter(sizeA)
             rng = range(coords2lin(cc, stridesA), stridesA[idim], n)
-            solve!(A, rng, M, A, rng) # in-place
+            A_ldiv_B!(M, Slice1D(A, rng))
         end
         sizeA[idim] = size(A, idim)
     end
@@ -660,7 +688,7 @@ function _interp_invert_matrix{BC<:Union(BCnil,BCnan,BCna),T}(::Type{BC}, ::Type
     n = length(d)
     d[1] = d[n] = 9/8
     dl[n-1] = du[1] = -1/4
-    MT = Tridiagonal(dl, d, du)
+    MT = lufact!(Tridiagonal(dl, d, du))
     # Woodbury correction to add 1/8 for row 1, col 3 and row n, col n-2
     U = zeros(T, n, 2)
     V = zeros(T, 2, n)
@@ -674,11 +702,11 @@ function _interp_invert_matrix{T}(::Type{BCreflect}, ::Type{InterpQuadratic}, dl
     n = length(d)
     d[1] += 1/8
     d[n] += 1/8
-    M = Tridiagonal(dl, d, du)
+    M = lufact!(Tridiagonal(dl, d, du))
 end
 function _interp_invert_matrix{T}(::Type{BCperiodic}, ::Type{InterpQuadratic}, dl::Vector{T}, d::Vector{T}, du::Vector{T})
     n = length(d)
-    MT = Tridiagonal(dl, d, du)
+    MT = lufact!(Tridiagonal(dl, d, du))
     # Woodbury correction to wrap around
     U = zeros(T, n, 2)
     V = zeros(T, 2, n)
@@ -692,7 +720,7 @@ function _interp_invert_matrix{T,BC<:Union(BCnearest,BCfill)}(::Type{BC}, ::Type
     n = length(d)
     du[1] += 1/8
     dl[n-1] += 1/8
-    M = Tridiagonal(dl, d, du)
+    M = lufact!(Tridiagonal(dl, d, du))
 end
 
 # We have 3 functions for computing indices and coefficients:
