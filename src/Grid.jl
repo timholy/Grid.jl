@@ -15,6 +15,8 @@ include("interpflags.jl")
 include("interp.jl")
 include("restrict_prolong.jl")
 include("utilities.jl")
+include("coord.jl")
+
 
 export
 # Types
@@ -27,6 +29,7 @@ export
     BCnearest,
     BCfill,
     Counter,
+    AbstractInterpGrid,
     InterpGrid,
     InterpGridCoefs,
     InterpIrregular,
@@ -34,6 +37,7 @@ export
     InterpNearest,
     InterpLinear,
     InterpQuadratic,
+    CoordInterpGrid,
 # Functions
     filledges!,
     interp,
