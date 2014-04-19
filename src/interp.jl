@@ -36,7 +36,9 @@ end
 # For efficient multi-valued interpolation, use the low-level
 # interface below. (getindex and valgrad provide examples of how to use the
 # low-level interface.)
-type InterpGrid{T<:FloatingPoint, N, BC<:BoundaryCondition, IT<:InterpType} <: AbstractArray{T,N}
+abstract AbstractInterpGrid{T, N, BC<:BoundaryCondition, IT<:InterpType} <: AbstractArray{T,N}
+
+type InterpGrid{T<:FloatingPoint, N, BC<:BoundaryCondition, IT<:InterpType} <: AbstractInterpGrid{T,N,BC,IT}
     coefs::Array{T,N}
     ic::InterpGridCoefs{T, IT}
     x::Vector{T}
@@ -141,10 +143,9 @@ function valgrad{T}(G::InterpGrid{T,1}, x::Real)
     setx(G, x)
     _valgrad(G)
 end
-function valgrad{T}(G::InterpGrid{T}, x::Real...)
-    setx(G, x...)
+function valgrad{T}(G::AbstractInterpGrid{T}, x::Real...)
     g = Array(T, length(x))
-    val = _valgrad(g, G)
+    val = valgrad(g, G, x...)
     return val, g
 end
 function valgrad{T}(g::Vector{T}, G::InterpGrid{T}, x::Real...)
@@ -153,25 +154,24 @@ function valgrad{T}(g::Vector{T}, G::InterpGrid{T}, x::Real...)
 end
 
 ## Vectorized evaluation at multiple points
-function getindex{T,R<:Real}(G::InterpGrid{T,1}, x::AbstractVector{R})
+function getindex{T,R<:Real}(G::AbstractInterpGrid{T,1}, x::AbstractVector{R})
     n = length(x)
     v = Array(T, n)
     for i = 1:n
-        setx(G, x[i])
-        v[i] = _getindex(G)
+        v[i] = getindex(G,x[i])
     end
     v
 end
-getindex{T,N,R<:Real}(G::InterpGrid{T,N}, x::AbstractVector{R}) = error("Linear indexing not supported")
-function getindex{T,R<:Real}(G::InterpGrid{T,2}, x::AbstractVector{R}, y::AbstractVector{R})
+getindex{T,N,R<:Real}(G::AbstractInterpGrid{T,N}, x::AbstractVector{R}) = error("Linear indexing not supported")
+function getindex{T,R<:Real}(G::AbstractInterpGrid{T,2}, x::AbstractVector{R}, y::AbstractVector{R})
     nx, ny = length(x), length(y)
     v = Array(T, nx, ny)
     for i = 1:nx
         for j = 1:ny
-            setx(G, x[i], y[j])
-            v[i,j] = _getindex(G)
+            v[i,j] = getindex(G, x[i], y[j])
         end
     end
+    v
 end
 function getindex{T,N,R<:Real}(G::InterpGrid{T,N}, x::AbstractVector{R}, xrest::AbstractVector{R}...)
     if length(xrest) != N-1
@@ -186,6 +186,7 @@ function getindex{T,N,R<:Real}(G::InterpGrid{T,N}, x::AbstractVector{R}, xrest::
             v[i,c...] = _getindex(G)
         end
     end
+    v
 end
 
 
@@ -198,7 +199,7 @@ end
 # Currently supports only 1d, nearest-neighbor or linear
 # Consequently, the internal representation may change in the future
 # BCperiodic and BCreflect not supported
-type InterpIrregular{T<:FloatingPoint, N, BC<:BoundaryCondition, IT<:InterpType} <: AbstractArray{T,N}
+type InterpIrregular{T<:FloatingPoint, N, BC<:BoundaryCondition, IT<:InterpType} <: AbstractInterpGrid{T,N,BC,IT}
     grid::Vector{Vector{T}}
     coefs::Array{T,N}
     x::Vector{T}
