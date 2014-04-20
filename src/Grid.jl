@@ -52,9 +52,11 @@ export
     restrict_size,
     restrict_extrap,
     set_gradient_coordinate,
+    set_hessian_coordinate,
     set_position,
     set_size,
     valgrad,
+    valgradhess,
     wrap
 
 end # module

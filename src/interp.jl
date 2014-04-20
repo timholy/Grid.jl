@@ -18,6 +18,7 @@ type InterpGridCoefs{T, IT<:InterpType}
     coord1d::Vector{Vector{Int}}  # for 1-d positions
     coef1d::Vector{Vector{T}}     # for 1-d coefficients
     gcoef1d::Vector{Vector{T}}    # for 1-d coefficients of the gradient
+    hcoef1d::Vector{Vector{T}}    # for 1-d coefficients of the hessian
     c1d::Vector{Vector{T}}        # temp space for switch btw value & gradient
     dims::Vector{Int}
     strides::Vector{Int}
@@ -109,7 +110,7 @@ end
 
 ## Evaluation at single points
 function _getindex{T}(G::InterpGrid{T})
-    set_position(G.ic, boundarycondition(G), false, G.x)
+    set_position(G.ic, boundarycondition(G), false, false, G.x)
     interp(G.ic, G.coefs)
 end
 function getindex(G::InterpGrid, x::Real...)
@@ -122,7 +123,7 @@ function _valgrad{T,N}(g::Vector{T}, G::InterpGrid{T,N})
     end
     ic = G.ic
     coefs = G.coefs
-    set_position(ic, boundarycondition(G), true, G.x)
+    set_position(ic, boundarycondition(G), true, false, G.x)
     val = interp(ic, coefs)
     for idim = 1:N
         set_gradient_coordinate(ic, idim)
@@ -133,7 +134,7 @@ end
 function _valgrad{T}(G::InterpGrid{T,1})
     ic = G.ic
     coefs = G.coefs
-    set_position(ic, boundarycondition(G), true, G.x)
+    set_position(ic, boundarycondition(G), true, false, G.x)
     val = interp(ic, coefs)
     set_gradient_coordinate(ic, 1)
     g = interp(ic, coefs)
@@ -151,6 +152,57 @@ end
 function valgrad{T}(g::Vector{T}, G::InterpGrid{T}, x::Real...)
     setx(G, x...)
     _valgrad(g, G)
+end
+function _valgradhess{T,N}(g::Vector{T}, h::Matrix{T}, G::InterpGrid{T,N})
+    if length(g) != N
+        error("Wrong number of components for the gradient")
+    end
+    if size(h) != (N,N)
+        error("Wrong number of components for the hessian")
+    end
+    ic = G.ic
+    coefs = G.coefs
+    set_position(ic, boundarycondition(G), true, true, G.x)
+    val = interp(ic, coefs)
+    for idim = 1:N
+        set_gradient_coordinate(ic, idim)
+        g[idim] = interp(ic, coefs)
+        # diagonal elements of the hessian
+        set_hessian_coordinate(ic, idim, idim)
+        h[idim,idim] = interp(ic, coefs)
+        # off-diagonal element. exploit the symmetry!
+        for jdim = idim+1:N
+            set_hessian_coordinate(ic, idim, jdim)
+            h[idim,jdim] = interp(ic, coefs)
+            h[jdim,idim] = h[idim,jdim]
+        end
+    end
+    return val
+end
+function _valgradhess{T}(G::InterpGrid{T,1})
+    ic = G.ic
+    coefs = G.coefs
+    set_position(ic, boundarycondition(G), true, true, G.x)
+    val = interp(ic, coefs)
+    set_gradient_coordinate(ic, 1)
+    g = interp(ic, coefs)
+    set_hessian_coordinate(ic, 1, 1)
+    h = interp(ic, coefs)
+    return val, g, h
+end
+function valgradhess{T}(G::InterpGrid{T,1}, x::Real)
+    setx(G, x)
+    _valgradhess(G)
+end
+function valgradhess{T}(G::AbstractInterpGrid{T}, x::Real...)
+    g = Array(T, length(x))
+    h = Array(T, length(x), length(x))
+    val = valgradhess(g, h, G, x...)
+    return val, g, h
+end
+function valgradhess{T}(g::Vector{T}, h::Matrix{T}, G::InterpGrid{T}, x::Real...)
+    setx(G, x...)
+    _valgradhess(g, h, G)
 end
 
 ## Vectorized evaluation at multiple points
@@ -268,7 +320,7 @@ end
 # interpolation and gradient computation.
 #
 # set_position handles step 1 of this process.
-function set_position{T,BC<:BoundaryCondition,IT<:InterpType}(ic::InterpGridCoefs{T,IT}, ::Type{BC}, calc_grad::Bool, x::Vector{T})
+function set_position{T,BC<:BoundaryCondition,IT<:InterpType}(ic::InterpGridCoefs{T,IT}, ::Type{BC}, calc_grad::Bool, calc_hess::Bool, x::Vector{T})
     N = ndims(ic)
     if length(x) != N
         error("Dimensionality mismatch")
@@ -291,6 +343,9 @@ function set_position{T,BC<:BoundaryCondition,IT<:InterpType}(ic::InterpGridCoef
             interp_coefs_1d(ic.coef1d[idim], BC, IT, dx)
             if calc_grad
                 interp_gcoefs_1d(ic.gcoef1d[idim], BC, IT, dx)
+            end
+            if calc_hess
+                interp_hcoefs_1d(ic.hcoef1d[idim], BC, IT, dx)
             end
         end
         if wrap
@@ -329,7 +384,32 @@ function set_gradient_coordinate(ic::InterpGridCoefs, i::Int)
             ic.c1d[idim] = ic.coef1d[idim]
         end
     end
-    interp_coef(ic.coef, ic.c1d)# , npoints(IT), N)
+    interp_coef(ic.coef, ic.c1d)
+end
+function set_hessian_coordinate(ic::InterpGridCoefs, i1::Int, i2::Int)
+    if !ic.valid
+        return
+    end
+    N = ndims(ic)
+    if !(1 <= i1 <= N && 1 <= i2 <= N)
+        error("Wrong dimension index")
+    end
+    for idim = 1:N
+        if i1 == i2
+            if idim == i1
+                ic.c1d[idim] = ic.hcoef1d[idim]
+            else
+                ic.c1d[idim] = ic.coef1d[idim]
+            end
+        else
+            if idim == i1 || idim == i2
+                ic.c1d[idim] = ic.gcoef1d[idim]
+            else
+                ic.c1d[idim] = ic.coef1d[idim]
+            end
+        end
+    end
+    interp_coef(ic.coef, ic.c1d)
 end
 
 # "interp" evaluates the interpolation. Call "set_position" first. If
@@ -396,12 +476,14 @@ function InterpGridCoefs{T,IT<:InterpType}(::Type{T}, ::Type{IT}, dims::Union(Di
     coord1d = Array(Vector{Int}, N)
     coef1d = Array(Vector{T}, N)
     gcoef1d = Array(Vector{T}, N)
+    hcoef1d = Array(Vector{T}, N)
     c1d = Array(Vector{T}, N)
     l = npoints(IT)
     for idim = 1:N
         coord1d[idim] = Array(Int, l)
         coef1d[idim] = Array(T, l)
         gcoef1d[idim] = Array(T, l)
+        hcoef1d[idim] = Array(T, l)
         # do not allocate entries for c1d
     end
     n_coef = l^N
@@ -413,7 +495,7 @@ function InterpGridCoefs{T,IT<:InterpType}(::Type{T}, ::Type{IT}, dims::Union(Di
         interp_coords_1d(coord1d[idim], IT)
     end
     interp_index(offset, coord1d, strides)
-    InterpGridCoefs{T,IT}(coord1d,coef1d,gcoef1d,c1d,[dims...],[strides...],offset,0,index,false,false,coef)
+    InterpGridCoefs{T,IT}(coord1d,coef1d,gcoef1d,hcoef1d,c1d,[dims...],[strides...],offset,0,index,false,false,coef)
 end
 InterpGridCoefs{IT<:InterpType}(A::Array, ::Type{IT}) = InterpGridCoefs(eltype(A), IT, [size(A)...], [strides(A)...])
 
@@ -599,6 +681,11 @@ function interp_gcoefs_1d{T,BC<:BoundaryCondition}(coef1d::Vector{T}, ::Type{BC}
     coef1d[1] = dx-0.5
     coef1d[2] = -2dx
     coef1d[3] = dx+0.5
+end
+function interp_hcoefs_1d{T,BC<:BoundaryCondition}(coef1d::Vector{T}, ::Type{BC}, ::Type{InterpQuadratic}, dx::T)
+    coef1d[1] = one(T)
+    coef1d[2] = -2*one(T)
+    coef1d[3] = one(T)
 end
 
 eltype{T, N, BC, IT}(G::InterpGrid{T, N, BC, IT}) = T
