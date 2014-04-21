@@ -173,7 +173,7 @@ function getindex{T,R<:Real}(G::AbstractInterpGrid{T,2}, x::AbstractVector{R}, y
     end
     v
 end
-function getindex{T,N,R<:Real}(G::InterpGrid{T,N}, x::AbstractVector{R}, xrest::AbstractVector{R}...)
+function getindex{T,N,R<:Real}(G::AbstractInterpGrid{T,N}, x::AbstractVector{R}, xrest::AbstractVector{R}...)
     if length(xrest) != N-1
         error("Dimensionality mismatch")
     end
@@ -577,7 +577,7 @@ end
 function interp_coefs_1d{T,BC<:BoundaryCondition}(coef1d::Vector{T}, ::Type{BC}, ::Type{InterpNearest}, dx::T)
     coef1d[1] = one(T)
 end
-function interp_gcoefs_1d{T,BC<:BoundaryCondition}(coef1d::Vector{T}, ::Type{BC}, ::Type{InterpQuadratic}, dx::T)
+function interp_gcoefs_1d{T,BC<:BoundaryCondition}(coef1d::Vector{T}, ::Type{BC}, ::Type{InterpNearest}, dx::T)
     coef1d[1] = zero(T)
 end
 
@@ -585,7 +585,7 @@ function interp_coefs_1d{T,BC<:BoundaryCondition}(coef1d::Vector{T}, ::Type{BC},
     coef1d[1] = 1.0-dx
     coef1d[2] = dx
 end
-function interp_gcoefs_1d{T,BC<:BoundaryCondition}(coef1d::Vector{T}, ::Type{BC}, ::Type{InterpQuadratic}, dx::T)
+function interp_gcoefs_1d{T,BC<:BoundaryCondition}(coef1d::Vector{T}, ::Type{BC}, ::Type{InterpLinear}, dx::T)
     coef1d[1] = -one(T)
     coef1d[2] = one(T)
 end

@@ -1,4 +1,4 @@
-using Grid
+using Grid, Base.Test
 
 include("derivative_numer.jl")
 
@@ -48,7 +48,43 @@ for bc in (BCnil, BCnan, BCna, BCreflect, BCperiodic, BCnearest, BCfill)
                 @assert abs(ig[i,j] - A[i,j]) < EPS
             end
         end
+        v = ig[1:size(A,1), 1:size(A,2)]
+        @assert all(abs(v - A) .< EPS)
     end
+end
+A = randn(4,5,4)
+for bc in (BCnil, BCnan, BCna, BCreflect, BCperiodic, BCnearest, BCfill)
+    for it in (InterpNearest, InterpLinear, InterpQuadratic)
+        ig = bc == BCfill ? InterpGrid(A, 0.0, it) : InterpGrid(A, bc, it)
+        for k = 1:size(A,3), j = 1:size(A,2), i = 1:size(A,1)
+            @assert abs(ig[i,j,k] - A[i,j,k]) < EPS
+        end
+        v = ig[1:size(A,1), 1:size(A,2), 1:size(A,3)]
+        @assert all(abs(v - A) .< EPS)
+    end
+end
+A = randn(4,5,4,3)
+for bc in (BCnil, BCnan, BCna, BCreflect, BCperiodic, BCnearest, BCfill)
+    for it in (InterpNearest, InterpLinear, InterpQuadratic)
+        ig = bc == BCfill ? InterpGrid(A, 0.0, it) : InterpGrid(A, bc, it)
+        for l = 1:size(A,4), k = 1:size(A,3), j = 1:size(A,2), i = 1:size(A,1)
+            @assert abs(ig[i,j,k,l] - A[i,j,k,l]) < EPS
+        end
+        v = ig[1:size(A,1), 1:size(A,2), 1:size(A,3), 1:size(A,4)]
+        @assert all(abs(v - A) .< EPS)
+    end
+end
+
+A = float([1:4])
+for it in (InterpNearest, InterpLinear, InterpQuadratic)
+    ig = InterpGrid(A, BCreflect, it)
+    y = ig[-3:8]
+    @assert all(abs(y-A[[4:-1:1,1:4,4:-1:1]]) .< EPS)
+end
+for it in (InterpNearest, InterpLinear, InterpQuadratic)
+    ig = InterpGrid(A, BCnearest, it)
+    y = ig[0:6]
+    @assert all(abs(y-A[[1,1:4,4,4]]) .< EPS)
 end
 
 # Quadratic interpolation
@@ -101,6 +137,24 @@ gnum = derivative_numer(func, tuple(x...), 1)
 gnum = derivative_numer(func, tuple(x...), 2)
 @assert abs(g[2]-gnum) < Eps*(abs(g[2])+abs(gnum))
 
+# Nearest-neighbor value and gradient
+y = [float(2:6)]
+ig = InterpGrid(y, BCnan, InterpNearest)
+x = 1.8
+v, g = valgrad(ig, x)
+@assert v == 3
+@assert g == 0
+@assert ig[1.8:5.4] == [3:6]
+
+# Linear value and gradient
+y = [float(2:6)]
+ig = InterpGrid(y, BCnan, InterpLinear)
+x = 1.8
+v, g = valgrad(ig, x)
+@assert abs(v - 2.8) < Eps
+@assert abs(g - 1.0) < Eps
+@assert all(abs(ig[1.8:5.4] - [2.8:5.8]) .< Eps)
+
 #### Interpolation on irregularly-spaced grids ####
 x = [100.0,110.0,150.0]
 y = rand(3)
@@ -116,6 +170,18 @@ iu = InterpIrregular(x, y, BCna, InterpLinear)
 @assert abs(iu[106] - (0.4*y[1] + 0.6*y[2])) < Eps
 @assert abs(iu[149] - (y[2]/40 + (39/40)*y[3])) < Eps
 @assert isnan(iu[150.1])
+iu = InterpIrregular(x, y, BCnil, InterpLinear)
+@test_throws isnan(iu[99])
+@assert abs(iu[101] - (0.9*y[1] + 0.1*y[2])) < Eps
+@assert abs(iu[106] - (0.4*y[1] + 0.6*y[2])) < Eps
+@assert abs(iu[149] - (y[2]/40 + (39/40)*y[3])) < Eps
+@test_throws isnan(iu[150.1])
+iu = InterpIrregular(x, y, BCnearest, InterpLinear)
+@assert iu[99] == y[1]
+@assert abs(iu[101] - (0.9*y[1] + 0.1*y[2])) < Eps
+@assert abs(iu[106] - (0.4*y[1] + 0.6*y[2])) < Eps
+@assert abs(iu[149] - (y[2]/40 + (39/40)*y[3])) < Eps
+@assert iu[150.1] == y[3]
 
 
 #### Restrict/prolong ####
