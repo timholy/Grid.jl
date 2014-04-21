@@ -57,6 +57,14 @@ julia> v,g = valgrad(yi, 4.25)
 julia> 2*a*(4.25-c)
 31.59
 ```
+or the *second-order derivative* (in multidimensional cases, the *Hessian matrix*):
+```julia
+julia> v,g,h = valgradhess(yi, 4.25)
+(32.40025,31.59000000000001,16.200000000000017)
+
+julia> 2a
+16.2
+```
 
 While these examples are one-dimensional, you can do interpolation on arrays of any dimensionality.
 
@@ -116,11 +124,14 @@ interp_invert!(y, BCnan, InterpQuadratic)   # solve for generalized interp. coef
 ic = InterpGridCoefs(y, InterpQuadratic)    # prepare for interpolation on this grid
 
 # Do the following for each evaluation point
-set_position(ic, BCnil, true, [1.8])        # set position to x=1.8, computes the coefs
+set_position(ic, BCnil, true, true, [1.8])  # set position to x=1.8, computes the coefs
 v = interp(ic, y)                           # extract the value
 # Do this if you want the slope at the same point
 set_gradient_coordinate(ic, 1)              # change coefs to calc gradient along coord 1
 g = interp(ic, y)                           # extract the gradient
+# Do this to evaluate the Hessian at that point
+set_hessian_coordinate(ic, 1, 2)            # change coefs to calc hessian element H[1,2], i.e. d2/dxdy
+h = interp(ic, y)                           # extract hessian element
 ```
 If this were an RGB image, you could call `interp` once for the red color channel, once for the green, and once for the blue, with just one call to `set_position`.
 
