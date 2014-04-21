@@ -105,6 +105,9 @@ yi = interp(ic, yc)
 set_gradient_coordinate(ic, 1)
 g = interp(ic, yc)
 @assert abs(g - 2*a*(x-c)) < 100*eps()
+set_hessian_coordinate(ic, 1, 1)
+h = interp(ic, yc)
+@test_approx_eq_eps h 2a 100*eps()
 
 # High-level interface
 yi = InterpGrid(y, BCnil, InterpQuadratic)
@@ -112,18 +115,30 @@ yi = InterpGrid(y, BCnil, InterpQuadratic)
 v,g = valgrad(yi, x)
 @assert abs(v - qfunc(x)) < 100*eps()
 @assert abs(g - 2*a*(x-c)) < 100*eps()
+v2, g2, h2 = valgradhess(yi, x)
+@test_approx_eq_eps v2 qfunc(x) 100*eps()
+@test_approx_eq_eps g2 2a*(x-c) 100*eps()
+@test_approx_eq_eps h2 2a 100*eps()
 
 # Test derivatives with other boundary conditions
 Eps = sqrt(eps())
 func = x -> yi[x]
 gnum = derivative_numer(func, x)
+hnum = derivative2_numer(func, x)
 @assert abs(g-gnum) < Eps*(abs(g)+abs(gnum))
+@test_approx_eq_eps g2 gnum Eps*(abs(g2)+abs(gnum))
+@test_approx_eq_eps h2 hnum cbrt(eps())*(abs(h2)+abs(hnum))
+
 for BC in (BCnan, BCna, BCnearest, BCperiodic, BCreflect, 0)
     yi = InterpGrid(y, BC, InterpQuadratic)
     func = x -> yi[x]
     v,g = valgrad(yi, x)
     gnum = derivative_numer(func, x)
     @assert abs(g-gnum) < Eps*(abs(g)+abs(gnum))
+    v2,g2,h2 = valgradhess(yi, x)
+    hnum = derivative2_numer(func, x)
+    @test_approx_eq_eps g2 gnum Eps*(abs(g2)+abs(gnum))
+    @test_approx_eq_eps h2 hnum cbrt(eps())*(abs(h2)+abs(hnum))
 end
 
 # Test derivatives of 2d interpolation
@@ -131,11 +146,21 @@ y = rand(7,8)
 yi = InterpGrid(y, BCreflect, InterpQuadratic)
 x = [2.2, 3.1]
 v,g = valgrad(yi, x...)
+v2,g2,h2 = valgradhess(yi, x...)
 func = (x1,x2) -> yi[x1,x2]
 gnum = derivative_numer(func, tuple(x...), 1)
 @assert abs(g[1]-gnum) < Eps*(abs(g[1])+abs(gnum))
+@test_approx_eq_eps g2[1] gnum Eps*(abs(g2[1])+abs(gnum))
 gnum = derivative_numer(func, tuple(x...), 2)
 @assert abs(g[2]-gnum) < Eps*(abs(g[2])+abs(gnum))
+@test_approx_eq_eps g2[2] gnum Eps*(abs(g2[2])+abs(gnum))
+hnum = derivative2_numer(func, tuple(x...), (1, 1))
+@test_approx_eq_eps h2[1,1] hnum cbrt(eps())*(abs(h2[1,1])+abs(hnum))
+hnum = derivative2_numer(func, tuple(x...), (1, 2))
+@test_approx_eq_eps h2[1,2] hnum cbrt(eps())*(abs(h2[1,2])+abs(hnum))
+@test_approx_eq_eps h2[2,1] hnum cbrt(eps())*(abs(h2[2,1])+abs(hnum))
+hnum = derivative2_numer(func, tuple(x...), (2, 2))
+@test_approx_eq_eps h2[2,2] hnum cbrt(eps())*(abs(h2[2,2])+abs(hnum))
 
 # Nearest-neighbor value and gradient
 y = [float(2:6)]
