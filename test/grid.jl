@@ -196,11 +196,11 @@ iu = InterpIrregular(x, y, BCna, InterpLinear)
 @assert abs(iu[149] - (y[2]/40 + (39/40)*y[3])) < Eps
 @assert isnan(iu[150.1])
 iu = InterpIrregular(x, y, BCnil, InterpLinear)
-@test_throws isnan(iu[99])
+@test_throws BoundsError isnan(iu[99])
 @assert abs(iu[101] - (0.9*y[1] + 0.1*y[2])) < Eps
 @assert abs(iu[106] - (0.4*y[1] + 0.6*y[2])) < Eps
 @assert abs(iu[149] - (y[2]/40 + (39/40)*y[3])) < Eps
-@test_throws isnan(iu[150.1])
+@test_throws BoundsError isnan(iu[150.1])
 iu = InterpIrregular(x, y, BCnearest, InterpLinear)
 @assert iu[99] == y[1]
 @assert abs(iu[101] - (0.9*y[1] + 0.1*y[2])) < Eps

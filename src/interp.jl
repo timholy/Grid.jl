@@ -64,46 +64,46 @@ function InterpGrid{T<:FloatingPoint, IT<:InterpType}(A::Array{T}, f::Number, ::
 end
 
 
-setx{T}(G::InterpGrid{T,1}, x::Real) = G.x[1] = x
+setx{T}(G::InterpGrid{T,1}, x::Real) = @inbounds G.x[1] = x
 function setx{T}(G::InterpGrid{T,2}, x::Real, y::Real)
     xG = G.x
-    xG[1] = x
-    xG[2] = y
+    @inbounds xG[1] = x
+    @inbounds xG[2] = y
 end
 function setx{T}(G::InterpGrid{T,3}, x::Real, y::Real, z::Real)
     xG = G.x
-    xG[1] = x
-    xG[2] = y
-    xG[3] = z
+    @inbounds xG[1] = x
+    @inbounds xG[2] = y
+    @inbounds xG[3] = z
 end
 function setx{T,N}(G::InterpGrid{T,N}, x::Real...)
     if length(x) != N
         error("Incorrect number of dimensions supplied")
     end
     xG = G.x
-    for idim = 1:N
+    @inbounds for idim = 1:N
         xG[idim] = x[idim]
     end
 end
 # a version that corrects for the padding of BCfill types
-setx{T}(G::InterpGrid{T,1,BCfill}, x::Real) = G.x[1] = x+1
+setx{T}(G::InterpGrid{T,1,BCfill}, x::Real) = @inbounds G.x[1] = x+1
 function setx{T}(G::InterpGrid{T,2,BCfill}, x::Real, y::Real)
     xG = G.x
-    xG[1] = x+1
-    xG[2] = y+1
+    @inbounds xG[1] = x+1
+    @inbounds xG[2] = y+1
 end
 function setx{T}(G::InterpGrid{T,3,BCfill}, x::Real, y::Real, z::Real)
     xG = G.x
-    xG[1] = x+1
-    xG[2] = y+1
-    xG[3] = z+1
+    @inbounds xG[1] = x+1
+    @inbounds xG[2] = y+1
+    @inbounds xG[3] = z+1
 end
 function setx{T,N}(G::InterpGrid{T,N,BCfill}, x::Real...)
     if length(x) != N
         error("Incorrect number of dimensions supplied")
     end
     xG = G.x
-    for idim = 1:N
+    @inbounds for idim = 1:N
         xG[idim] = x[idim]+1
     end
 end
@@ -113,11 +113,12 @@ function _getindex{T}(G::InterpGrid{T})
     set_position(G.ic, boundarycondition(G), false, false, G.x)
     interp(G.ic, G.coefs)
 end
-function getindex(G::InterpGrid, x::Real...)
-    setx(G, x...)
-    _getindex(G)
-end
-function _valgrad{T,N}(g::Vector{T}, G::InterpGrid{T,N})
+getindex(G::InterpGrid, x::Real) = (setx(G, x); _getindex(G))
+getindex(G::InterpGrid, x::Real, y::Real) = (setx(G, x, y); _getindex(G))
+getindex(G::InterpGrid, x::Real, y::Real, z::Real) = (setx(G, x, y, z); _getindex(G))
+getindex(G::InterpGrid, x::Real...) = (setx(G, x...); _getindex(G))
+
+function _valgrad{T,N}(g::AbstractVector{T}, G::InterpGrid{T,N})
     if length(g) != N
         error("Wrong number of components for the gradient")
     end
@@ -140,24 +141,35 @@ function _valgrad{T}(G::InterpGrid{T,1})
     g = interp(ic, coefs)
     return val, g
 end
-function valgrad{T}(G::InterpGrid{T,1}, x::Real)
+function valgrad{T}(G::AbstractInterpGrid{T,1}, x::Real)
     setx(G, x)
     _valgrad(G)
+end
+function valgrad{T}(G::AbstractInterpGrid{T,2}, x::Real, y::Real)
+    g = Array(T, 2)
+    val = valgrad(g, G, x, y)
+    return val, g
+end
+function valgrad{T}(G::AbstractInterpGrid{T,3}, x::Real, y::Real, z::Real)
+    g = Array(T, 3)
+    val = valgrad(g, G, x, y, z)
+    return val, g
 end
 function valgrad{T}(G::AbstractInterpGrid{T}, x::Real...)
     g = Array(T, length(x))
     val = valgrad(g, G, x...)
     return val, g
 end
-function valgrad{T}(g::Vector{T}, G::InterpGrid{T}, x::Real...)
-    setx(G, x...)
-    _valgrad(g, G)
-end
-function _valgradhess{T,N}(g::Vector{T}, h::Matrix{T}, G::InterpGrid{T,N})
+valgrad{T}(g::AbstractVector{T}, G::InterpGrid{T}, x::Real) = (setx(G, x); _valgrad(g, G))
+valgrad{T}(g::AbstractVector{T}, G::InterpGrid{T}, x::Real, y::Real) = (setx(G, x, y); _valgrad(g, G))
+valgrad{T}(g::AbstractVector{T}, G::InterpGrid{T}, x::Real, y::Real, z::Real) = (setx(G, x, y, z); _valgrad(g, G))
+valgrad{T}(g::AbstractVector{T}, G::InterpGrid{T}, x::Real...) = (setx(G, x...); _valgrad(g, G))
+
+function _valgradhess{T,N}(g::AbstractVector{T}, h::AbstractMatrix{T}, G::InterpGrid{T,N})
     if length(g) != N
         error("Wrong number of components for the gradient")
     end
-    if size(h) != (N,N)
+    if size(h,1) != N || size(h,2) != N
         error("Wrong number of components for the hessian")
     end
     ic = G.ic
@@ -190,9 +202,21 @@ function _valgradhess{T}(G::InterpGrid{T,1})
     h = interp(ic, coefs)
     return val, g, h
 end
-function valgradhess{T}(G::InterpGrid{T,1}, x::Real)
+function valgradhess{T}(G::AbstractInterpGrid{T,1}, x::Real)
     setx(G, x)
     _valgradhess(G)
+end
+function valgradhess{T}(G::AbstractInterpGrid{T,2}, x::Real, y::Real)
+    g = Array(T, 2)
+    h = Array(T, 2, 2)
+    val = valgradhess(g, h, G, x, y)
+    return val, g, h
+end
+function valgradhess{T}(G::AbstractInterpGrid{T,2}, x::Real, y::Real, z::Real)
+    g = Array(T, 3)
+    h = Array(T, 3, 3)
+    val = valgradhess(g, h, G, x, y)
+    return val, g, h
 end
 function valgradhess{T}(G::AbstractInterpGrid{T}, x::Real...)
     g = Array(T, length(x))
@@ -200,6 +224,9 @@ function valgradhess{T}(G::AbstractInterpGrid{T}, x::Real...)
     val = valgradhess(g, h, G, x...)
     return val, g, h
 end
+valgradhess{T}(g::Vector{T}, h::Matrix{T}, G::InterpGrid{T, 1}, x::Real) = (setx(G, x); _valgradhess(g, h, G))
+valgradhess{T}(g::Vector{T}, h::Matrix{T}, G::InterpGrid{T, 2}, x::Real, y::Real) = (setx(G, x, y); _valgradhess(g, h, G))
+valgradhess{T}(g::Vector{T}, h::Matrix{T}, G::InterpGrid{T, 3}, x::Real, y::Real, z::Real) = (setx(G, x, y, z); _valgradhess(g, h, G))
 function valgradhess{T}(g::Vector{T}, h::Matrix{T}, G::InterpGrid{T}, x::Real...)
     setx(G, x...)
     _valgradhess(g, h, G)
