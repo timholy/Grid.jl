@@ -8,7 +8,7 @@ dims = (4, 6)
 z = zeros(dims)
 ic = InterpGridCoefs(z, InterpQuadratic)
 x = [2,3.5]
-set_position(ic, BCnearest, true, true, x)
+set_position(ic, BCnearest, true, x)
 @assert ic.coord1d == Vector{Int}[[1,2,3],[3,4,5]]
 @assert ic.coef1d == Vector{Float64}[[1/8,3/4,1/8],[1/2,1/2,0]]
 @assert ic.wrap == false
@@ -26,7 +26,7 @@ for n_dims = 1:4
     ic = InterpGridCoefs(Float64, InterpQuadratic, dims, s)
     x = rand(n_dims) .+ 1.5
     x[x .== 2.5] = 2.49999
-    set_position(ic, BCnearest, true, true, x)
+    set_position(ic, BCnearest, true, x)
     @assert ic.wrap == false
     @assert abs(ic.coef[iceil(length(ic.coef)/2)] .- prod(3/4.-(x.-2).^2)) < eps()
     index = ic.offset.+ic.offset_base.+1

@@ -357,6 +357,7 @@ function set_position{T,BC<:BoundaryCondition,IT<:InterpType}(ic::InterpGridCoef
     end
     ic.wrap = wrap
 end
+set_position{T,BC<:BoundaryCondition,IT<:InterpType}(ic::InterpGridCoefs{T,IT}, ::Type{BC}, calc_grad::Bool, x::Vector{T}) = set_position(ic, BC, calc_grad, false, x)
 
 # Once you're done calculating interpolated _values_, call this function
 # for each component of the _gradient_.
