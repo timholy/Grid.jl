@@ -212,10 +212,10 @@ function valgradhess{T}(G::AbstractInterpGrid{T,2}, x::Real, y::Real)
     val = valgradhess(g, h, G, x, y)
     return val, g, h
 end
-function valgradhess{T}(G::AbstractInterpGrid{T,2}, x::Real, y::Real, z::Real)
+function valgradhess{T}(G::AbstractInterpGrid{T,3}, x::Real, y::Real, z::Real)
     g = Array(T, 3)
     h = Array(T, 3, 3)
-    val = valgradhess(g, h, G, x, y)
+    val = valgradhess(g, h, G, x, y, z)
     return val, g, h
 end
 function valgradhess{T}(G::AbstractInterpGrid{T}, x::Real...)
