@@ -457,8 +457,8 @@ function interp{T}(ic::InterpGridCoefs{T}, A::AbstractArray, index::Int)
     end
     val = zero(T)
     for i = 1:length(coef)
-        c = coef[i]
-        val += c == zero(T) ? zero(T) : c*convert(T,A[offset[i]+index])
+        @inbounds c = coef[i]
+        @inbounds val += c == zero(T) ? zero(T) : c*convert(T,A[offset[i]+index])
     end
     return convert(T, val)
 end
@@ -560,11 +560,13 @@ function interp_coords_1d(coord1d::Vector{Int}, ::Type{InterpLinear})
 end
 # version for indices
 function interp_coords_1d{T,BC<:BoundaryCondition}(coord1d::Vector{Int}, ::Type{BC}, ::Type{InterpLinear}, x::T, len::Int)
-    ix::Int = wrap(BC, ifloor(x), len)
-    dx::T = x-trunc(x)
-    coord1d[1] = ix
-    iswrap::Bool = (ix == len && dx > 0)
-    coord1d[2] = wrap(BC, ix+1, len)
+    ifx = itrunc(x)
+    dx = x-ifx
+    ifx -= x < convert(T, ifx)
+    ix = wrap(BC, ifx, len)
+    @inbounds coord1d[1] = ix
+    iswrap = (ix == len && dx > 0)
+    @inbounds coord1d[2] = wrap(BC, ix+1, len)
     return ix, dx, iswrap
 end
 function interp_coords_1d{T}(coord1d::Vector{Int}, ::Type{BCreflect}, ::Type{InterpLinear}, x::T, len::Int)
@@ -584,8 +586,8 @@ function interp_coords_1d{T}(coord1d::Vector{Int}, ::Type{BCreflect}, ::Type{Int
             ix = 1
         end
     end
-    coord1d[1] = ix
-    coord1d[2] = wrap(BCreflect, ixp, len)
+    @inbounds coord1d[1] = ix
+    @inbounds coord1d[2] = wrap(BCreflect, ixp, len)
     iswrap = (ix == ixp && dx > 0)
     return ix, dx, iswrap
 end
