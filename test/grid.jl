@@ -41,11 +41,15 @@ end
 A = randn(4,10)
 const EPS = sqrt(eps())
 for bc in (BCnil, BCnan, BCna, BCreflect, BCperiodic, BCnearest, BCfill)
-    for it in (InterpNearest, InterpLinear, InterpQuadratic)
+    for it in (InterpNearest, InterpLinear, InterpQuadratic, InterpCubic)
+        # skip boundary conditions that aren't implemented for cubic yet
+        if it == InterpCubic && !(bc <: Union(BCnan,BCna,BCnil))
+            continue
+        end
         ig = bc == BCfill ? InterpGrid(A, 0.0, it) : InterpGrid(A, bc, it)
         for i = 1:size(A,1)
             for j = 1:size(A,2)
-                @assert abs(ig[i,j] - A[i,j]) < EPS
+                @test_approx_eq_eps ig[i,j] A[i,j] EPS
             end
         end
         v = ig[1:size(A,1), 1:size(A,2)]
@@ -54,7 +58,11 @@ for bc in (BCnil, BCnan, BCna, BCreflect, BCperiodic, BCnearest, BCfill)
 end
 A = randn(4,5,4)
 for bc in (BCnil, BCnan, BCna, BCreflect, BCperiodic, BCnearest, BCfill)
-    for it in (InterpNearest, InterpLinear, InterpQuadratic)
+    for it in (InterpNearest, InterpLinear, InterpQuadratic, InterpCubic)
+        # skip boundary conditions that aren't implemented for cubic yet
+        if it == InterpCubic && !(bc <: Union(BCnan,BCna,BCnil))
+            continue
+        end
         ig = bc == BCfill ? InterpGrid(A, 0.0, it) : InterpGrid(A, bc, it)
         for k = 1:size(A,3), j = 1:size(A,2), i = 1:size(A,1)
             @assert abs(ig[i,j,k] - A[i,j,k]) < EPS
@@ -65,7 +73,11 @@ for bc in (BCnil, BCnan, BCna, BCreflect, BCperiodic, BCnearest, BCfill)
 end
 A = randn(4,5,4,3)
 for bc in (BCnil, BCnan, BCna, BCreflect, BCperiodic, BCnearest, BCfill)
-    for it in (InterpNearest, InterpLinear, InterpQuadratic)
+    for it in (InterpNearest, InterpLinear, InterpQuadratic, InterpCubic)
+        # skip boundary conditions that aren't implemented for cubic yet
+        if it == InterpCubic && !(bc <: Union(BCnan,BCna,BCnil))
+            continue
+        end
         ig = bc == BCfill ? InterpGrid(A, 0.0, it) : InterpGrid(A, bc, it)
         for l = 1:size(A,4), k = 1:size(A,3), j = 1:size(A,2), i = 1:size(A,1)
             @assert abs(ig[i,j,k,l] - A[i,j,k,l]) < EPS
