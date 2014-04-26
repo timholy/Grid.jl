@@ -4,8 +4,8 @@ b = 1.7
 c = 6.2
 d = 5.9
 cfunc = x -> a*x.^3 .+ b*x.^2 .+ c*x .+ d
-qgrad = x -> 3a*x.^2 .+ 2b*x .+ c
-qhess = x -> 6a*x .+ 2b
+cgrad = x -> 3a*x.^2 .+ 2b*x .+ c
+chess = x -> 6a*x .+ 2b
 xg = Float64[1:8]
 y = cfunc(xg)
 
@@ -23,18 +23,18 @@ gi = interp(ic, yc)
 @test_approx_eq_eps cgrad(x) gi 0.1*(abs(cgrad(x))+abs(yi))
 set_hessian_coordinate(ic, 1, 1)
 hi = interp(ic, yc)
-@test_approx_eq_eps chess(x) hi 0.1*(abs(cgrad(x))+abs(yi))
+@test_approx_eq_eps chess(x) hi 0.1*(abs(chess(x))+abs(yi))
 
 # High-level interface
 yi = InterpGrid(y, BCnil, InterpCubic)
-@test_approx_eq_eps yi[x] cfunc(x) 0.01*(abs(cfunc(x))+abs(yi))
+@test_approx_eq_eps yi[x] cfunc(x) 0.01*(abs(cfunc(x))+abs(yi[x]))
 v,g = valgrad(yi,x)
-@test_approx_eq_eps v cfunc(x) 0.01*(abs(cfunc(x))+abs(yi))
-@test_approx_eq_eps g cgrad(x) 0.01*(abs(cgrad(x))+abs(yi))
+@test_approx_eq_eps v cfunc(x) 0.01*(abs(cfunc(x))+abs(yi[x]))
+@test_approx_eq_eps g cgrad(x) 0.01*(abs(cgrad(x))+abs(yi[x]))
 v,g,h = valgradhess(yi,x)
-@test_approx_eq_eps v cfunc(x) 0.01*(abs(cfunc(x))+abs(yi))
-@test_approx_eq_eps g cgrad(x) 0.01*(abs(cgick(x))+abs(yi))
-@test_approx_eq_eps h chess(x) 0.01*(abs(cgess(x))+abs(yi))
+@test_approx_eq_eps v cfunc(x) 0.01*(abs(cfunc(x))+abs(yi[x]))
+@test_approx_eq_eps g cgrad(x) 0.01*(abs(cgrad(x))+abs(yi[x]))
+@test_approx_eq_eps h chess(x) 0.01*(abs(chess(x))+abs(yi[x]))
 
 # Test derivatives with other boundary conditions
 func = x -> yi[x]
