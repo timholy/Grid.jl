@@ -784,13 +784,13 @@ end
 function interp_gcoefs_1d{T,BC<:BoundaryCondition}(coef1d::Vector{T}, ::Type{BC}, ::Type{InterpCubic}, dx::T)
     coef1d[1] = -(1-dx)^2/2
     coef1d[2] = 3dx^2/2-2dx
-    coef1d[3] = -dx^2-dx/2+3/2
+    coef1d[3] = 1/2+dx*(1-(3/2)*dx)
     coef1d[4] = dx^2/2
 end
 function interp_hcoefs_1d{T,BC<:BoundaryCondition}(coef1d::Vector{T}, ::Type{BC}, ::Type{InterpCubic}, dx::T)
     coef1d[1] = 1-dx
     coef1d[2] = 3dx-2
-    coef1d[3] = -2dx-1/2
+    coef1d[3] = 1-3dx
     coef1d[4] = dx
 end
 
