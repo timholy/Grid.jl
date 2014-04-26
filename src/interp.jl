@@ -942,7 +942,7 @@ function _interp_invert_matrix{BC<:Union(BCnil,BCnan,BCna),T}(::Type{BC}, ::Type
     # Doing this yields c_1 = f_1 and c_N = f_N at the low and high end respectively
     # The BC also adds the equations a_0 = 2a_1 - a_2 for a ghost point a_0 outside the lower end of the domain,
     # and similarly for the higher end. These equations are represented in the top and bottom rows.
-    d[1:2] = d[end-1:end] = ones(T,2)
+    d[1:2] = d[end-1:end] = 1
     du[1] = dl[end] = convert(T,-2)
     du[2] = dl[end-1] = du[end] = dl[1] = zero(T)
     MT = lufact!(Tridiagonal(dl, d, du))
