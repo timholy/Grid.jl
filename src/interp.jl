@@ -55,6 +55,14 @@ function InterpGrid{T<:FloatingPoint, BC<:BoundaryCondition, IT<:InterpType}(A::
     x = zeros(T, ndims(A))
     InterpGrid{T, ndims(A), BC, IT}(coefs, ic, x, nan(T))
 end
+function InterpGrid{T<:FloatingPoint, BC<:Union(BCnil,BCnan,BCna)}(A::Array{T}, ::Type{BC}, ::Type{InterpCubic})
+    # Cubic interpolation requires padding
+    coefs=pad1(copy(A),0,1:ndims(A))
+    interp_invert!(coefs, BC, InterpCubic, 1:ndims(A))
+    ic = InterpGridCoefs(coefs, InterpCubic)
+    x = zeros(T, ndims(A))
+    InterpGrid{T, ndims(A), BC, InterpCubic}(coefs, ic, x, nan(T))
+end
 function InterpGrid{T<:FloatingPoint, IT<:InterpType}(A::Array{T}, f::Number, ::Type{IT})
     coefs = pad1(A, f, 1:ndims(A))
     interp_invert!(coefs, BCnearest, IT, 1:ndims(A))
@@ -99,6 +107,28 @@ function setx{T}(G::InterpGrid{T,3,BCfill}, x::Real, y::Real, z::Real)
     @inbounds xG[3] = z+1
 end
 function setx{T,N}(G::InterpGrid{T,N,BCfill}, x::Real...)
+    if length(x) != N
+        error("Incorrect number of dimensions supplied")
+    end
+    xG = G.x
+    @inbounds for idim = 1:N
+        xG[idim] = x[idim]+1
+    end
+end
+# InterpCubic also needs to compensate for padding
+setx{T,BC<:Union(BCna,BCnan,BCnil)}(G::InterpGrid{T,1,BC,InterpCubic}, x::Real) = @inbounds G.x[1] = x+1
+function setx{T,BC<:Union(BCna,BCnan,BCnil)}(G::InterpGrid{T,2,BC,InterpCubic}, x::Real, y::Real)
+    xG = G.x
+    @inbounds xG[1] = x+1
+    @inbounds xG[2] = y+1
+end
+function setx{T,BC<:Union(BCna,BCnan,BCnil)}(G::InterpGrid{T,3,BC,InterpCubic}, x::Real, y::Real, z::Real)
+    xG = G.x
+    @inbounds xG[1] = x+1
+    @inbounds xG[2] = y+1
+    @inbounds xG[3] = z+1
+end
+function setx{T,N,BC<:Union(BCna,BCnan,BCnil)}(G::InterpGrid{T,N,BC,InterpCubic}, x::Real...)
     if length(x) != N
         error("Incorrect number of dimensions supplied")
     end
@@ -534,12 +564,14 @@ InterpGridCoefs{IT<:InterpType}(A::Array, ::Type{IT}) = InterpGridCoefs(eltype(A
 npoints(::Type{InterpNearest}) = 1
 npoints(::Type{InterpLinear}) = 2
 npoints(::Type{InterpQuadratic}) = 3
+npoints(::Type{InterpCubic}) = 4
 
 # Test whether a given coordinate will yield an interpolated result
 isvalid{BC<:BoundaryCondition,IT<:InterpType}(::Type{BC},::Type{IT}, x, len::Int) = true
 isvalid{BC<:Union(BCnil,BCnan,BCna)}(::Type{BC}, ::Type{InterpNearest}, x, len::Int) = x >= 0.5 && x-0.5 <= len
 isvalid{BC<:Union(BCnil,BCnan,BCna)}(::Type{BC}, ::Type{InterpLinear}, x, len::Int) = x >= 1 && x <= len
 isvalid{BC<:Union(BCnil,BCnan,BCna)}(::Type{BC}, ::Type{InterpQuadratic}, x, len::Int) = x >= 1 && x <= len
+isvalid{BC<:Union(BCnil,BCnan,BCna)}(::Type{BC}, ::Type{InterpCubic}, x, len::Int) = 1 <= x <= len -1
 
 
 # version for offsets
@@ -686,6 +718,32 @@ function interp_coords_1d(coord1d::Vector{Int}, ::Type{BCreflect}, ::Type{Interp
     return ix, dx, iswrap
 end
 
+# version for offsets
+function interp_coords_1d(coord1d::Vector{Int}, ::Type{InterpCubic})
+    coord1d[1] = -1
+    coord1d[2] = 0
+    coord1d[3] = 1
+    coord1d[4] = 2
+end
+#versions for indices
+function interp_coords_1d{BC<:BoundaryCondition}(coord1d::Vector{Int}, ::Type{BC}, ::Type{InterpCubic}, x, len::Int)
+    ix = itrunc(real(x))
+    dx = x - ix
+    coord1d[2] = ix
+    # the outermost non-wrapping indices are 2 and len-2
+    iswrap = isvalid(BC, ix, 2, len-1)
+    if iswrap
+        coord1d[1] = wrap(BC, ix-1, len)
+        coord1d[3] = wrap(BC, ix+1, len)
+        coord1d[4] = wrap(BC, ix+2, len)
+    else
+        coord1d[1] = ix-1
+        coord1d[3] = ix+1
+        coord1d[4] = ix+2
+    end
+    return ix, dx, iswrap
+end
+
 function interp_coefs_1d{T,BC<:BoundaryCondition}(coef1d::Vector{T}, ::Type{BC}, ::Type{InterpNearest}, dx::T)
     coef1d[1] = one(T)
 end
@@ -716,6 +774,24 @@ function interp_hcoefs_1d{T,BC<:BoundaryCondition}(coef1d::Vector{T}, ::Type{BC}
     coef1d[1] = one(T)
     coef1d[2] = -2*one(T)
     coef1d[3] = one(T)
+end
+function interp_coefs_1d{T,BC<:BoundaryCondition}(coef1d::Vector{T}, ::Type{BC}, ::Type{InterpCubic}, dx::T)
+    coef1d[1] = (1-dx)^3/6
+    coef1d[2] = 2/3-dx^2*(2-dx)/2
+    coef1d[3] = 2/3-(dx-1)^2*(1+dx)/2
+    coef1d[4] = dx^3/6
+end
+function interp_gcoefs_1d{T,BC<:BoundaryCondition}(coef1d::Vector{T}, ::Type{BC}, ::Type{InterpCubic}, dx::T)
+    coef1d[1] = -(1-dx)^2/2
+    coef1d[2] = 3dx^2/2-2dx
+    coef1d[3] = 1/2+dx*(1-(3/2)*dx)
+    coef1d[4] = dx^2/2
+end
+function interp_hcoefs_1d{T,BC<:BoundaryCondition}(coef1d::Vector{T}, ::Type{BC}, ::Type{InterpCubic}, dx::T)
+    coef1d[1] = 1-dx
+    coef1d[2] = 3dx-2
+    coef1d[3] = 1-3dx
+    coef1d[4] = dx
 end
 
 eltype{T, N, BC, IT}(G::InterpGrid{T, N, BC, IT}) = T
@@ -797,6 +873,26 @@ function interp_invert!{BC<:BoundaryCondition}(A::Array, ::Type{BC}, ::Type{Inte
     end
     A
 end
+function interp_invert!{BC<:BoundaryCondition}(A::Array, ::Type{BC}, ::Type{InterpCubic}, dimlist)
+    sizeA = [size(A)...]
+    stridesA = [strides(A)...]
+
+    for idim = dimlist
+        n = size(A,idim)
+        # Set up tridiagonal system: (c_i-1 + 4 c_i + c_i+1) / 6 = f_i
+        du = fill(convert(eltype(A), 1/6), n-1)
+        d = fill(convert(eltype(A), 4/6), n)
+        dl = copy(du)
+        M = _interp_invert_matrix(BC, InterpCubic, dl, d, du)
+        sizeA[idim] = 1
+        for cc in Counter(sizeA)
+            rng = range(coords2lin(cc, stridesA), stridesA[idim], n)
+            A_ldiv_B!(M, Slice1D(A, rng))
+        end
+        sizeA[idim] = size(A,idim)
+    end
+    A
+end
 interp_invert!{BC<:Union(BoundaryCondition,Number)}(A::Array, ::Type{BC}, IT) = interp_invert!(A, BC, IT, 1:ndims(A))
 interp_invert!{BC<:Union(BoundaryCondition,Number)}(A::Array, ::Type{BC}, IT, dimlist...) = interp_invert!(A, BC, IT, dimlist)
 
@@ -839,6 +935,26 @@ function _interp_invert_matrix{T,BC<:Union(BCnearest,BCfill)}(::Type{BC}, ::Type
     du[1] += 1/8
     dl[n-1] += 1/8
     M = lufact!(Tridiagonal(dl, d, du))
+end
+
+function _interp_invert_matrix{BC<:Union(BCnil,BCnan,BCna),T}(::Type{BC}, ::Type{InterpCubic}, dl::Vector{T}, d::Vector{T}, du::Vector{T})
+    # The most common way to terminate Cubic B-spline interpolations at the edges is by setting the second derivative to 0
+    # Doing this yields c_1 = f_1 and c_N = f_N at the low and high end respectively
+    # The BC also adds the equations a_0 = 2a_1 - a_2 for a ghost point a_0 outside the lower end of the domain,
+    # and similarly for the higher end. These equations are represented in the top and bottom rows.
+    d[1:2] = d[end-1:end] = 1
+    du[1] = dl[end] = convert(T,-2)
+    du[2] = dl[end-1] = du[end] = dl[1] = zero(T)
+    MT = lufact!(Tridiagonal(dl, d, du))
+    # Since the edge equations adds off-diagonal elemetns, we need Woodbury correction
+    n = length(d)
+    U = zeros(T, n, 2)
+    V = zeros(T, 2, n)
+    C = zeros(T, 2, 2)
+    C[1,1] = C[2,2] = one(T)
+    U[1,1] = U[n,2] = one(T)
+    V[1,3] = V[2,n-2] = one(T)
+    Woodbury(MT, U, C, V)
 end
 
 # We have 3 functions for computing indices and coefficients:

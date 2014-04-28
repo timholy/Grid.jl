@@ -106,11 +106,16 @@ The interpolation order can be one of the following:
   <tr>
     <td>InterpQuadratic</td> <td>quadratic (three-point) interpolation</td>
   </tr>
+  <tr>
+    <td>InterpCubic</td> <td>cubic (four-point) interpolation</td>
+  </tr>
 </table>
 
-Note that "quadratic interpolation" is technically "non-interpolating", meaning that the coefficients of the interpolating polynomial are not the function values at the grid points. `InterpGrid` solves the tridiagonal system of equations for you, so in simple cases you do not need to worry about such details. `InterpQuadratic` is the lowest order of interpolation that yields a continuous gradient, and hence is suitable for use in gradient-based optimization.
+Note that quadratic and cubic interpolation are implemented through [B-splines](en.wikipedia.org/wiki/B-spline) which are technically "non-interpolating", meaning that the coefficients of the interpolating polynomial are not the function values at the grid points. `InterpGrid` solves the tridiagonal system of equations for you, so in simple cases you do not need to worry about such details. `InterpQuadratic` is the lowest order of interpolation that yields a continuous gradient, and hence is suitable for use in gradient-based optimization, and `InterpCubic` is similarly the lowest order of interpolation that yields a continuous Hessian.
 
-In `d` dimensions, interpolation references `n^d` grid points, where `n` is the number of grid points used in one dimension. `InterpQuadratic` corresponds to `n=3`, and cubic spline interpolation would correspond to `n=4`. Consequently, in higher dimensions quadratic interpolation can be a significant savings relative to cubic spline interpolation.
+Note that `InterpCubic` currently doesn't support all types of boundary conditions; only `BCnil` and `BCnan` are supported.
+
+In `d` dimensions, interpolation references `n^d` grid points, where `n` is the number of grid points used in one dimension. `InterpQuadratic` corresponds to `n=3`, and `InterpCubic` corresponds to `n=4`. Consequently, in higher dimensions quadratic interpolation can be a significant savings relative to cubic spline interpolation.
 
 #### Low-level interface
 

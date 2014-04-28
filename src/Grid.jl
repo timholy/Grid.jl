@@ -37,6 +37,7 @@ export
     InterpNearest,
     InterpLinear,
     InterpQuadratic,
+    InterpCubic,
     CoordInterpGrid,
 # Functions
     filledges!,
