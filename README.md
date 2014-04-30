@@ -176,4 +176,4 @@ Restriction and prolongation are extremely fast operations, because the coeffici
 
 ## Credits
 
-Timothy E. Holy, 2012
+The main authors of this package are Tim Holy, Tomas Lycken, Simon Byrne, and Ron Rock.
