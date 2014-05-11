@@ -164,15 +164,15 @@ gnum = derivative_numer(func, tuple(x...), 1)
 @assert abs(g[1]-gnum) < Eps*(abs(g[1])+abs(gnum))
 @test_approx_eq_eps g2[1] gnum Eps*(abs(g2[1])+abs(gnum))
 gnum = derivative_numer(func, tuple(x...), 2)
-@assert abs(g[2]-gnum) < Eps*(abs(g[2])+abs(gnum))
+@test_approx_eq_eps g[2]  gnum Eps*(abs(g[2])+abs(gnum))
 @test_approx_eq_eps g2[2] gnum Eps*(abs(g2[2])+abs(gnum))
 hnum = derivative2_numer(func, tuple(x...), (1, 1))
-@test_approx_eq_eps h2[1,1] hnum cbrt(eps())*(abs(h2[1,1])+abs(hnum))
+@test_approx_eq_eps h2[1,1] hnum 1e-5
 hnum = derivative2_numer(func, tuple(x...), (1, 2))
-@test_approx_eq_eps h2[1,2] hnum cbrt(eps())*(abs(h2[1,2])+abs(hnum))
-@test_approx_eq_eps h2[2,1] hnum cbrt(eps())*(abs(h2[2,1])+abs(hnum))
+@test_approx_eq_eps h2[1,2] hnum 1e-5
+@test_approx_eq_eps h2[2,1] hnum 1e-5
 hnum = derivative2_numer(func, tuple(x...), (2, 2))
-@test_approx_eq_eps h2[2,2] hnum cbrt(eps())*(abs(h2[2,2])+abs(hnum))
+@test_approx_eq_eps h2[2,2] hnum 1e-5
 
 # Nearest-neighbor value and gradient
 y = [float(2:6)]
