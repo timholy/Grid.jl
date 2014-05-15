@@ -1,15 +1,23 @@
 import Base.FloatRange
 
-type CoordInterpGrid{T<:FloatingPoint, N, BC<:BoundaryCondition, IT<:InterpType, R<:Range} <: AbstractInterpGrid{T,N}
-    coord::NTuple{N,R}
+type CoordInterpGrid{T<:FloatingPoint, N, BC<:BoundaryCondition, IT<:InterpType, R} <: AbstractInterpGrid{T,N}
+    coord::R
     grid::InterpGrid{T,N,BC,IT}
+    function CoordInterpGrid(coord::NTuple{N,Range}, grid::InterpGrid{T,N,BC,IT})
+        map(length,coord) == size(grid) || throw(DimensionMismatch("Coordinate lengths do not match grid size."))
+        new(coord,grid)
+    end
+end
+
+function CoordInterpGrid{T,N,BC,IT}(coord::NTuple{N,Range}, grid::InterpGrid{T,N,BC,IT})
+    CoordInterpGrid{T,N,BC,IT,typeof(coord)}(coord,grid)
 end
 
 function CoordInterpGrid{T<:FloatingPoint,R<:Range}(coord::R, grid::InterpGrid{T,1})
     CoordInterpGrid((coord,),grid)
 end
 
-function CoordInterpGrid{N,R<:Range,T<:FloatingPoint}(coord::NTuple{N,R}, A::Array{T,N}, args...)
+function CoordInterpGrid{N,T<:FloatingPoint}(coord::NTuple{N,Range}, A::Array{T,N}, args...)
     CoordInterpGrid(coord,InterpGrid(A,args...))
 end
 function CoordInterpGrid{R<:Range,T<:FloatingPoint}(coord::R,A::Array{T,1},args...)

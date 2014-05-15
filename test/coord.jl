@@ -20,12 +20,9 @@ v,g = valgrad(cg,0.3)
 y = -2.0:0.1:2.0
 z = Array(Float64,length(x),length(y))
 
-for i = 1:length(x)
-    for j = 1:length(y)
-        z[i,j] = sin(x[i]+y[j])
-    end
-end
+z = Float64[sin(i+j) for i in x, j in y]
 
+@test_throws DimensionMismatch cg = CoordInterpGrid((y,x),z,BCnil,InterpQuadratic)
 cg = CoordInterpGrid((x,y),z,BCnil,InterpQuadratic)
 
 @test abs(cg[0.0,0.0] - sin(0.0)) < 0.0001
