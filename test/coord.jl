@@ -18,8 +18,6 @@ v,g = valgrad(cg,0.3)
 
 
 y = -2.0:0.1:2.0
-z = Array(Float64,length(x),length(y))
-
 z = Float64[sin(i+j) for i in x, j in y]
 
 @test_throws DimensionMismatch cg = CoordInterpGrid((y,x),z,BCnil,InterpQuadratic)
