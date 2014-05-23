@@ -389,6 +389,9 @@ function set_position{T,BC<:BoundaryCondition,IT<:InterpType}(ic::InterpGridCoef
             break
         end
     end
+    if !valid && BC == BCnil
+        error("Invalid location")
+    end
     ic.valid = valid
     wrap = false
     if valid
