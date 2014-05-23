@@ -220,6 +220,11 @@ iu = InterpIrregular(x, y, BCnearest, InterpLinear)
 @assert abs(iu[149] - (y[2]/40 + (39/40)*y[3])) < Eps
 @assert iu[150.1] == y[3]
 
+#### Make sure generic implementation for higher dimensions doesn't throw
+B = rand(4, 4, 4, 4, 4)
+Bi = InterpGrid(B, BCnil, InterpLinear)
+Bi[2,2,2,2,2]
+@assert Bi[2,2,2,2,2] == B[2,2,2,2,2]
 
 #### Restrict/prolong ####
 # 1d

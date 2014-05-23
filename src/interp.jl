@@ -1181,9 +1181,9 @@ function interp_index_coef_generic{T}(indices::Array{Int}, coefs::Array{T}, coor
         end
     end
 end
-function interp_coef_generic{T}(indices::Array{Int}, coefs::Array{T}, coord1d::Vector{Vector{Int}}, coef1d::Vector{Vector{T}}, strides)
-    n_dims = length(coord1d)
-    l = length(coord1d[1])
+function interp_coef_generic{T}(coefs::Array{T}, coef1d::Vector{Vector{T}})
+    n_dims = length(coef1d)
+    l = length(coef1d[1])
     c = ones(Int, n_dims)
     offset = Array(Int, n_dims)
     p = Array(T, n_dims)
