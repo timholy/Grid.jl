@@ -43,15 +43,24 @@ hnum = derivative2_numer(func,x)
 
 for BC in (BCnan, BCna)
     yi = InterpGrid(y, BC, InterpCubic)
+    @test_throws ErrorException yi[1.1,2.8]  # wrong dimensionality
     func = x -> yi[x]
     v,g = valgrad(yi,x)
     gnum = derivative_numer(func,x) 
     @test_approx_eq_eps g gnum 10*cbrt(eps())*(abs(g)+abs(gnum))
+    g = zeros(2)
+    @test_throws ErrorException valgrad(g, yi, x)
     v,g,h = valgradhess(yi,x)
     gnum = derivative_numer(func,x)
     hnum = derivative2_numer(func,x)
     @test_approx_eq_eps g gnum 10*cbrt(eps())*(abs(g)+abs(gnum))
     @test_approx_eq_eps h hnum 10*cbrt(eps())*(abs(h)+abs(hnum))
+    g = zeros(1)
+    h = zeros(2,2)
+    @test_throws ErrorException valgradhess(g,h,yi,x)
+    g = zeros(2)
+    h = zeros(1,1)
+    @test_throws ErrorException valgradhess(g,h,yi,x)
 end
 
 # Test derivatives of 2D interpolation

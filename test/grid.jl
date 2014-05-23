@@ -102,11 +102,22 @@ for it in (InterpNearest, InterpLinear, InterpQuadratic)
     ig = InterpGrid(A, BCreflect, it)
     y = ig[-3:8]
     @assert all(abs(y-A[[4:-1:1,1:4,4:-1:1]]) .< EPS)
+    @test_throws ErrorException ig[-3:8, 2:4]
 end
 for it in (InterpNearest, InterpLinear, InterpQuadratic)
     ig = InterpGrid(A, BCnearest, it)
     y = ig[0:6]
     @assert all(abs(y-A[[1,1:4,4,4]]) .< EPS)
+end
+for it in (InterpNearest, InterpLinear, InterpQuadratic)
+    ig = InterpGrid(A, BCnil, it)
+    @test_throws ErrorException ig[-0.8]
+end
+for it in (InterpNearest, InterpLinear, InterpQuadratic)
+    for bc = (BCna, BCnan)
+        ig = InterpGrid(A, bc, it)
+        @test isnan(ig[-0.8])
+    end
 end
 
 # Quadratic interpolation
@@ -153,10 +164,13 @@ hnum = derivative2_numer(func, x)
 
 for BC in (BCnan, BCna, BCnearest, BCperiodic, BCreflect, 0)
     yi = InterpGrid(y, BC, InterpQuadratic)
+    @test_throws ErrorException yi[1.1,2.8]  # wrong dimensionality
     func = x -> yi[x]
     v,g = valgrad(yi, x)
     gnum = derivative_numer(func, x)
     @assert abs(g-gnum) < Eps*(abs(g)+abs(gnum))
+    g = zeros(2)
+    @test_throws ErrorException valgrad(g, yi, x)
     v2,g2,h2 = valgradhess(yi, x)
     hnum = derivative2_numer(func, x)
     @test_approx_eq_eps g2 gnum Eps*(abs(g2)+abs(gnum))
