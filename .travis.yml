@@ -14,4 +14,6 @@ before_install:
   - sudo apt-get install libpcre3-dev julia -y
 script:
   - julia -e 'Pkg.init(); run(`ln -s $(pwd()) $(Pkg.dir("Grid"))`); Pkg.pin("Grid"); Pkg.resolve()'
-  - julia -e 'using Grid; @assert isdefined(:Grid); @assert typeof(Grid) === Module'
+  - if [ $JULIAVERSION = "julianightlies" ]; then julia --code-coverage test/runtests.jl; fi
+  - if [ $JULIAVERSION = "juliarelease" ]; then julia tests/test.jl; fi
+  - if [ $JULIAVERSION = "julianightlies" ]; then julia -e 'Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'; fi
