@@ -1,6 +1,8 @@
 # Grid operations for the Julia language
 
-[![Grid](http://pkg.julialang.org/badges/Grid_0.3.svg)](http://pkg.julialang.org/?pkg=Grid&ver=0.3)[![Coverage Status](https://coveralls.io/repos/timholy/Grid.jl/badge.png?branch=master)](https://coveralls.io/r/timholy/Grid.jl?branch=master)
+[![Grid](http://pkg.julialang.org/badges/Grid_0.3.svg)](http://pkg.julialang.org/?pkg=Grid&ver=0.3)
+[![Build Status](https://travis-ci.org/timholy/Grid.jl.svg?branch=master)](https://travis-ci.org/timholy/Grid.jl)
+[![Coverage Status](https://coveralls.io/repos/timholy/Grid.jl/badge.png?branch=master)](https://coveralls.io/r/timholy/Grid.jl?branch=master)
 
 Continuous objects, such as functions or images, are frequently sampled on a regularly-spaced grid of points. The **Grid** module provides support for common operations on such objects. Currently, the two main operations are *interpolation* and *restriction/prolongation*. Restriction and prolongation are frequently used for solving partial differential equations by multigrid methods, but can also be used simply as fast, antialiased methods for two-fold resolution changes (e.g., in computing thumbnails).
 
