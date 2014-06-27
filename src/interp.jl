@@ -798,8 +798,10 @@ eltype{T, N, BC, IT}(G::InterpGrid{T, N, BC, IT}) = T
 ndims{T, N, BC, IT}(G::InterpGrid{T, N, BC, IT}) = N
 boundarycondition{T, N, BC, IT}(G::InterpGrid{T, N, BC, IT}) = BC
 interptype{T, N, BC, IT}(G::InterpGrid{T, N, BC, IT}) = IT
-size(G::InterpGrid) = size(G.coefs)
-size(G::InterpGrid, i::Integer) = size(G.coefs, i)
+size{T,N}(G::InterpGrid{T,N,BCfill}) = ntuple(N, i->size(G.coefs,i)-2)
+size{T,N}(G::InterpGrid{T,N,BCfill}, i::Integer) = size(G.coefs, i)-2
+size{T,N}(G::InterpGrid{T,N}) = size(G.coefs)
+size{T,N}(G::InterpGrid{T,N}, i::Integer) = size(G.coefs, i)
 
 eltype{T, N, BC, IT}(G::InterpIrregular{T, N, BC, IT}) = T
 ndims{T, N, BC, IT}(G::InterpIrregular{T, N, BC, IT}) = N

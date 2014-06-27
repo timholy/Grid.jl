@@ -34,3 +34,11 @@ v,g = valgrad(cg,0.0,0.0)
 v = valgrad(g,cg,0.3,0.0)
 @test abs(g[1] - cos(0.3)) < 0.001
 @test abs(g[2] - cos(0.3)) < 0.001
+
+# Issue #29
+xg = -10:.5:10
+yg = -3:.15:3.5
+zg = Float64[sin(x)*cos(y) for x in xg, y in yg]
+ig = CoordInterpGrid((xg,yg),zg, 0, InterpLinear)
+@test size(ig) == size(zg)
+@test ig[xg[1],yg[1]] == zg[1,1]
