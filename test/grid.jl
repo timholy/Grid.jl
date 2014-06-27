@@ -2,6 +2,16 @@ using Grid, Base.Test
 
 include("derivative_numer.jl")
 
+# compute the transpose, without transposing elements
+# Necessary since Julia issue #7244 was fixed
+function transpose_container(p::StridedMatrix)
+    pp = similar(p, size(p,2), size(p,1))
+    for j = 1:size(p,2), i = 1:size(p,1)
+        pp[j,i] = p[i,j]
+    end
+    pp
+end
+
 ## Interpolation ##
 # Low-level components
 dims = (4, 6)
@@ -296,13 +306,13 @@ ptest[6,3] = ptest[4,3] = [0.5]
 ptest[5,3] = [1.0]
 @assert all(p .== ptest)
 p = prolong(a, 2, 9)
-@assert all(p .== ptest')
+@assert all(p .== transpose_container(ptest))
 r = restrict(a, [true,false])
 rtest = fill([0.0], 3, 5)
 rtest[2,3] = [1.0]
 @assert all(r .== rtest)
 r = restrict(a, [false,true])
-@assert all(r .== rtest')
+@assert all(r .== transpose_container(rtest))
 a = fill([0.0], 5, 5)
 a[2,3] = [1.0]
 rtest = fill([0.0], 3, 5)
