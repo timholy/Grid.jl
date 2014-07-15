@@ -308,17 +308,17 @@ end
 # Currently supports only 1d, nearest-neighbor or linear
 # Consequently, the internal representation may change in the future
 # BCperiodic and BCreflect not supported
-type InterpIrregular{T<:FloatingPoint, N, BC<:BoundaryCondition, IT<:InterpType} <: AbstractInterpGrid{T,N,BC,IT}
+type InterpIrregular{T<:FloatingPoint, S, N, BC<:BoundaryCondition, IT<:InterpType} <: AbstractInterpGrid{S,N,BC,IT}
     grid::Vector{Vector{T}}
-    coefs::Array{T,N}
+    coefs::Array{S,N}
     x::Vector{T}
-    fillval::T  # used only for BCfill (if ever)
+    fillval::S  # used only for BCfill (if ever)
 end
 InterpIrregular{T<:FloatingPoint, BC<:BoundaryCondition, IT<:Union(InterpNearest,InterpLinear)}(grid::Vector{T}, A::AbstractVector, ::Type{BC}, ::Type{IT}) =
     InterpIrregular(Vector{T}[grid], A, BC, IT) # special 1d syntax
 InterpIrregular{T<:FloatingPoint, BC<:BoundaryCondition, IT<:Union(InterpNearest,InterpLinear)}(grid::(Vector{T}...), A::AbstractVector, ::Type{BC}, ::Type{IT}) =
     InterpIrregular(Vector{T}[grid...], A, BC, IT)
-function InterpIrregular{T<:FloatingPoint, N, BC<:BoundaryCondition, IT<:Union(InterpNearest,InterpLinear)}(grid::Vector{Vector{T}}, A::AbstractArray{T, N}, ::Type{BC}, ::Type{IT})
+function InterpIrregular{T<:FloatingPoint, S, N, BC<:BoundaryCondition, IT<:Union(InterpNearest,InterpLinear)}(grid::Vector{Vector{T}}, A::AbstractArray{S, N}, ::Type{BC}, ::Type{IT})
     if length(grid) != 1
         error("Sorry, for now only 1d is supported")
     end
@@ -331,28 +331,28 @@ function InterpIrregular{T<:FloatingPoint, N, BC<:BoundaryCondition, IT<:Union(I
         end
     end
     grid = copy(grid)
-    coefs = Array(T, size(A))
+    coefs = Array(S, size(A))
     copy!(coefs, A)
     x = zeros(T, N)
-    InterpIrregular{T, N, BC, IT}(grid, coefs, x, nan(T))
+    InterpIrregular{T, S, N, BC, IT}(grid, coefs, x, nan(S))
 end
-function InterpIrregular{T<:FloatingPoint, IT<:InterpType}(grid, A::Array{T}, f::Number, ::Type{IT})
+function InterpIrregular{IT<:InterpType}(grid, A::Array, f::Number, ::Type{IT})
     iu = InterpIrregular(grid, A, BCfill, IT)
     iu.fillval = f
     iu
 end
 
-function _getindexii{T,BC<:Union(BCfill,BCna,BCnan)}(G::InterpIrregular{T,1,BC}, x::Real)
+function _getindexii{T,S,BC<:Union(BCfill,BCna,BCnan)}(G::InterpIrregular{T,S,1,BC}, x::Real)
     g = G.grid[1]
     i = (x == g[1]) ? 2 : searchsortedfirst(g, x)
     (i == 1 || i == length(g)+1) ? G.fillval : _interpu(x, g, i, G.coefs, interptype(G))
 end
-function _getindexii{T}(G::InterpIrregular{T,1,BCnil}, x::Real)
+function _getindexii{T,S}(G::InterpIrregular{T,S,1,BCnil}, x::Real)
     g = G.grid[1]
     i = (x == g[1]) ? 2 : searchsortedfirst(g, x)
     (i == 1 || i == length(g)+1) ? error(BoundsError) : _interpu(x, g, i, G.coefs, interptype(G))
 end
-function _getindexii{T}(G::InterpIrregular{T,1,BCnearest}, x::Real)
+function _getindexii{T,S}(G::InterpIrregular{T,S,1,BCnearest}, x::Real)
     g = G.grid[1]
     i = (x == g[1]) ? 2 : searchsortedfirst(g, x)
     i == 1 ? G.coefs[1] : i == length(g)+1 ? G.coefs[end] : _interpu(x, g, i, G.coefs, interptype(G))
@@ -806,10 +806,10 @@ size{T,N}(G::InterpGrid{T,N,BCfill}, i::Integer) = size(G.coefs, i)-2
 size{T,N}(G::InterpGrid{T,N}) = size(G.coefs)
 size{T,N}(G::InterpGrid{T,N}, i::Integer) = size(G.coefs, i)
 
-eltype{T, N, BC, IT}(G::InterpIrregular{T, N, BC, IT}) = T
-ndims{T, N, BC, IT}(G::InterpIrregular{T, N, BC, IT}) = N
-boundarycondition{T, N, BC, IT}(G::InterpIrregular{T, N, BC, IT}) = BC
-interptype{T, N, BC, IT}(G::InterpIrregular{T, N, BC, IT}) = IT
+eltype{T, S, N, BC, IT}(G::InterpIrregular{T, S, N, BC, IT}) = S
+ndims{T, S, N, BC, IT}(G::InterpIrregular{T, S, N, BC, IT}) = N
+boundarycondition{T, S, N, BC, IT}(G::InterpIrregular{T, S, N, BC, IT}) = BC
+interptype{T, S, N, BC, IT}(G::InterpIrregular{T, S, N, BC, IT}) = IT
 size(G::InterpIrregular) = size(G.coefs)
 size(G::InterpIrregular, i::Integer) = size(G.coefs, i)
 
