@@ -45,30 +45,30 @@ type InterpGrid{T<:FloatingPoint, N, BC<:BoundaryCondition, IT<:InterpType} <: A
     x::Vector{T}
     fillval::T  # used only for BCfill (if ever)
 end
-function InterpGrid{T<:FloatingPoint, BC<:BoundaryCondition, IT<:InterpType}(A::Array{T}, ::Type{BC}, ::Type{IT})
+function InterpGrid{T<:FloatingPoint, N, BC<:BoundaryCondition, IT<:InterpType}(A::Array{T, N}, ::Type{BC}, ::Type{IT})
     if BC == BCfill
         error("Construct BCfill InterpGrids by supplying the fill value")
     end
     coefs = copy(A)
-    interp_invert!(coefs, BC, IT, 1:ndims(A))
+    interp_invert!(coefs, BC, IT, 1:N)
     ic = InterpGridCoefs(coefs, IT)
-    x = zeros(T, ndims(A))
-    InterpGrid{T, ndims(A), BC, IT}(coefs, ic, x, nan(T))
+    x = zeros(T, N)
+    InterpGrid{T, N, BC, IT}(coefs, ic, x, nan(T))
 end
-function InterpGrid{T<:FloatingPoint, BC<:Union(BCnil,BCnan,BCna)}(A::Array{T}, ::Type{BC}, ::Type{InterpCubic})
+function InterpGrid{T<:FloatingPoint, N, BC<:Union(BCnil,BCnan,BCna)}(A::Array{T, N}, ::Type{BC}, ::Type{InterpCubic})
     # Cubic interpolation requires padding
-    coefs=pad1(copy(A),0,1:ndims(A))
-    interp_invert!(coefs, BC, InterpCubic, 1:ndims(A))
+    coefs=pad1(copy(A),0,1:N)
+    interp_invert!(coefs, BC, InterpCubic, 1:N)
     ic = InterpGridCoefs(coefs, InterpCubic)
-    x = zeros(T, ndims(A))
-    InterpGrid{T, ndims(A), BC, InterpCubic}(coefs, ic, x, nan(T))
+    x = zeros(T, N)
+    InterpGrid{T, N, BC, InterpCubic}(coefs, ic, x, nan(T))
 end
-function InterpGrid{T<:FloatingPoint, IT<:InterpType}(A::Array{T}, f::Number, ::Type{IT})
-    coefs = pad1(A, f, 1:ndims(A))
-    interp_invert!(coefs, BCnearest, IT, 1:ndims(A))
+function InterpGrid{T<:FloatingPoint, N, IT<:InterpType}(A::Array{T, N}, f::Number, ::Type{IT})
+    coefs = pad1(A, f, 1:N)
+    interp_invert!(coefs, BCnearest, IT, 1:N)
     ic = InterpGridCoefs(coefs, IT)
-    x = zeros(T, ndims(A))
-    InterpGrid{T, ndims(A), BCfill, IT}(coefs, ic, x, convert(T, f))
+    x = zeros(T, N)
+    InterpGrid{T, N, BCfill, IT}(coefs, ic, x, convert(T, f))
 end
 
 
@@ -318,7 +318,7 @@ InterpIrregular{T<:FloatingPoint, BC<:BoundaryCondition, IT<:Union(InterpNearest
     InterpIrregular(Vector{T}[grid], A, BC, IT) # special 1d syntax
 InterpIrregular{T<:FloatingPoint, BC<:BoundaryCondition, IT<:Union(InterpNearest,InterpLinear)}(grid::(Vector{T}...), A::AbstractVector, ::Type{BC}, ::Type{IT}) =
     InterpIrregular(Vector{T}[grid...], A, BC, IT)
-function InterpIrregular{T<:FloatingPoint, BC<:BoundaryCondition, IT<:Union(InterpNearest,InterpLinear)}(grid::Vector{Vector{T}}, A::AbstractArray, ::Type{BC}, ::Type{IT})
+function InterpIrregular{T<:FloatingPoint, N, BC<:BoundaryCondition, IT<:Union(InterpNearest,InterpLinear)}(grid::Vector{Vector{T}}, A::AbstractArray{T, N}, ::Type{BC}, ::Type{IT})
     if length(grid) != 1
         error("Sorry, for now only 1d is supported")
     end
@@ -333,8 +333,8 @@ function InterpIrregular{T<:FloatingPoint, BC<:BoundaryCondition, IT<:Union(Inte
     grid = copy(grid)
     coefs = Array(T, size(A))
     copy!(coefs, A)
-    x = zeros(T, ndims(A))
-    InterpIrregular{T, ndims(A), BC, IT}(grid, coefs, x, nan(T))
+    x = zeros(T, N)
+    InterpIrregular{T, N, BC, IT}(grid, coefs, x, nan(T))
 end
 function InterpIrregular{T<:FloatingPoint, IT<:InterpType}(grid, A::Array{T}, f::Number, ::Type{IT})
     iu = InterpIrregular(grid, A, BCfill, IT)
