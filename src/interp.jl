@@ -263,7 +263,7 @@ function valgradhess{T}(g::Vector{T}, h::Matrix{T}, G::InterpGrid{T}, x::Real...
 end
 
 ## Vectorized evaluation at multiple points
-function getindex{T,R<:Real}(G::AbstractInterpGrid{T,1}, x::AbstractVector{R})
+function getindex{T,R<:Number}(G::AbstractInterpGrid{T,1}, x::AbstractVector{R})
     n = length(x)
     v = Array(T, n)
     for i = 1:n
@@ -271,8 +271,8 @@ function getindex{T,R<:Real}(G::AbstractInterpGrid{T,1}, x::AbstractVector{R})
     end
     v
 end
-getindex{T,N,R<:Real}(G::AbstractInterpGrid{T,N}, x::AbstractVector{R}) = error("Linear indexing not supported")
-function getindex{T,R<:Real}(G::AbstractInterpGrid{T,2}, x::AbstractVector{R}, y::AbstractVector{R})
+getindex{T,N,R<:Number}(G::AbstractInterpGrid{T,N}, x::AbstractVector{R}) = error("Linear indexing not supported")
+function getindex{T,R<:Number}(G::AbstractInterpGrid{T,2}, x::AbstractVector{R}, y::AbstractVector{R})
     nx, ny = length(x), length(y)
     v = Array(T, nx, ny)
     for i = 1:nx
@@ -282,7 +282,7 @@ function getindex{T,R<:Real}(G::AbstractInterpGrid{T,2}, x::AbstractVector{R}, y
     end
     v
 end
-function getindex{T,N,R<:Real}(G::AbstractInterpGrid{T,N}, x::AbstractVector{R}, xrest::AbstractVector{R}...)
+function getindex{T,N,R<:Number}(G::AbstractInterpGrid{T,N}, x::AbstractVector{R}, xrest::AbstractVector{R}...)
     if length(xrest) != N-1
         error("Dimensionality mismatch")
     end
@@ -308,17 +308,17 @@ end
 # Currently supports only 1d, nearest-neighbor or linear
 # Consequently, the internal representation may change in the future
 # BCperiodic and BCreflect not supported
-type InterpIrregular{T<:FloatingPoint, S, N, BC<:BoundaryCondition, IT<:InterpType} <: AbstractInterpGrid{S,N,BC,IT}
+type InterpIrregular{T<:Number, S, N, BC<:BoundaryCondition, IT<:InterpType} <: AbstractInterpGrid{S,N,BC,IT}
     grid::Vector{Vector{T}}
     coefs::Array{S,N}
     x::Vector{T}
     fillval::S  # used only for BCfill (if ever)
 end
-InterpIrregular{T<:FloatingPoint, BC<:BoundaryCondition, IT<:Union(InterpNearest,InterpLinear)}(grid::Vector{T}, A::AbstractVector, ::Type{BC}, ::Type{IT}) =
+InterpIrregular{T<:Number, BC<:BoundaryCondition, IT<:Union(InterpNearest,InterpLinear)}(grid::Vector{T}, A::AbstractArray, ::Type{BC}, ::Type{IT}) =
     InterpIrregular(Vector{T}[grid], A, BC, IT) # special 1d syntax
-InterpIrregular{T<:FloatingPoint, BC<:BoundaryCondition, IT<:Union(InterpNearest,InterpLinear)}(grid::(Vector{T}...), A::AbstractVector, ::Type{BC}, ::Type{IT}) =
+InterpIrregular{T<:Number, BC<:BoundaryCondition, IT<:Union(InterpNearest,InterpLinear)}(grid::(Vector{T}...), A::AbstractArray, ::Type{BC}, ::Type{IT}) =
     InterpIrregular(Vector{T}[grid...], A, BC, IT)
-function InterpIrregular{T<:FloatingPoint, S, N, BC<:BoundaryCondition, IT<:Union(InterpNearest,InterpLinear)}(grid::Vector{Vector{T}}, A::AbstractArray{S, N}, ::Type{BC}, ::Type{IT})
+function InterpIrregular{T<:Number, S, N, BC<:BoundaryCondition, IT<:Union(InterpNearest,InterpLinear)}(grid::Vector{Vector{T}}, A::AbstractArray{S, N}, ::Type{BC}, ::Type{IT})
     if length(grid) != 1
         error("Sorry, for now only 1d is supported")
     end
@@ -342,23 +342,24 @@ function InterpIrregular{IT<:InterpType}(grid, A::Array, f::Number, ::Type{IT})
     iu
 end
 
-function _getindexii{T,S,BC<:Union(BCfill,BCna,BCnan)}(G::InterpIrregular{T,S,1,BC}, x::Real)
+function _getindexii{T,S,BC<:Union(BCfill,BCna,BCnan)}(G::InterpIrregular{T,S,1,BC}, x::Number)
     g = G.grid[1]
     i = (x == g[1]) ? 2 : searchsortedfirst(g, x)
     (i == 1 || i == length(g)+1) ? G.fillval : _interpu(x, g, i, G.coefs, interptype(G))
 end
-function _getindexii{T,S}(G::InterpIrregular{T,S,1,BCnil}, x::Real)
+function _getindexii{T,S}(G::InterpIrregular{T,S,1,BCnil}, x::Number)
     g = G.grid[1]
     i = (x == g[1]) ? 2 : searchsortedfirst(g, x)
     (i == 1 || i == length(g)+1) ? error(BoundsError) : _interpu(x, g, i, G.coefs, interptype(G))
 end
-function _getindexii{T,S}(G::InterpIrregular{T,S,1,BCnearest}, x::Real)
+function _getindexii{T,S}(G::InterpIrregular{T,S,1,BCnearest}, x::Number)
     g = G.grid[1]
     i = (x == g[1]) ? 2 : searchsortedfirst(g, x)
     i == 1 ? G.coefs[1] : i == length(g)+1 ? G.coefs[end] : _interpu(x, g, i, G.coefs, interptype(G))
 end
 # This next is necessary for precedence
 getindex(G::InterpIrregular, x::Real) = _getindexii(G, x)
+getindex(G::InterpIrregular, x::Number) = _getindexii(G, x)
 
 _interpu(x, g, i, coefs, ::Type{InterpNearest}) = (x-g[i-1] < g[i]-x) ? coefs[i-1] : coefs[i]
 function _interpu(x, g, i, coefs, ::Type{InterpLinear})
