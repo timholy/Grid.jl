@@ -218,31 +218,32 @@ v, g = valgrad(ig, x)
 
 #### Interpolation on irregularly-spaced grids ####
 x = [100.0,110.0,150.0]
-y = rand(3)
-iu = InterpIrregular(x, y, -200, InterpNearest)
-@assert iu[99] == -200
-@assert iu[101] == y[1]
-@assert iu[106] == y[2]
-@assert iu[149] == y[3]
-@assert iu[150.1] == -200
-iu = InterpIrregular(x, y, BCna, InterpLinear)
-@assert isnan(iu[99])
-@assert abs(iu[101] - (0.9*y[1] + 0.1*y[2])) < Eps
-@assert abs(iu[106] - (0.4*y[1] + 0.6*y[2])) < Eps
-@assert abs(iu[149] - (y[2]/40 + (39/40)*y[3])) < Eps
-@assert isnan(iu[150.1])
-iu = InterpIrregular(x, y, BCnil, InterpLinear)
-@test_throws BoundsError isnan(iu[99])
-@assert abs(iu[101] - (0.9*y[1] + 0.1*y[2])) < Eps
-@assert abs(iu[106] - (0.4*y[1] + 0.6*y[2])) < Eps
-@assert abs(iu[149] - (y[2]/40 + (39/40)*y[3])) < Eps
-@test_throws BoundsError isnan(iu[150.1])
-iu = InterpIrregular(x, y, BCnearest, InterpLinear)
-@assert iu[99] == y[1]
-@assert abs(iu[101] - (0.9*y[1] + 0.1*y[2])) < Eps
-@assert abs(iu[106] - (0.4*y[1] + 0.6*y[2])) < Eps
-@assert abs(iu[149] - (y[2]/40 + (39/40)*y[3])) < Eps
-@assert iu[150.1] == y[3]
+for y = (rand(3), big(rand(3)))
+    iu = InterpIrregular(x, y, -200, InterpNearest)
+    @assert iu[99] == -200
+    @assert iu[101] === y[1]
+    @assert iu[106] === y[2]
+    @assert iu[149] === y[3]
+    @assert iu[150.1] == -200
+    iu = InterpIrregular(x, y, BCna, InterpLinear)
+    @assert isnan(iu[99])
+    @assert abs(iu[101] - (0.9*y[1] + 0.1*y[2])) < Eps
+    @assert abs(iu[106] - (0.4*y[1] + 0.6*y[2])) < Eps
+    @assert abs(iu[149] - (y[2]/40 + (39/40)*y[3])) < Eps
+    @assert isnan(iu[150.1])
+    iu = InterpIrregular(x, y, BCnil, InterpLinear)
+    @test_throws BoundsError isnan(iu[99])
+    @assert abs(iu[101] - (0.9*y[1] + 0.1*y[2])) < Eps
+    @assert abs(iu[106] - (0.4*y[1] + 0.6*y[2])) < Eps
+    @assert abs(iu[149] - (y[2]/40 + (39/40)*y[3])) < Eps
+    @test_throws BoundsError isnan(iu[150.1])
+    iu = InterpIrregular(x, y, BCnearest, InterpLinear)
+    @assert iu[99] === y[1]
+    @assert abs(iu[101] - (0.9*y[1] + 0.1*y[2])) < Eps
+    @assert abs(iu[106] - (0.4*y[1] + 0.6*y[2])) < Eps
+    @assert abs(iu[149] - (y[2]/40 + (39/40)*y[3])) < Eps
+    @assert iu[150.1] === y[3]
+end
 
 #### Make sure generic implementation for higher dimensions doesn't throw
 B = rand(4, 4, 4, 4, 4)
