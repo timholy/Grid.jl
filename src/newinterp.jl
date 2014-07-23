@@ -33,7 +33,8 @@ function body_gen(::Type{BCnil}, ::Type{InterpLinear}, N::Integer)
         @nexprs $N d->(ix_d = ifloor(x_d); fx_d = x_d - convert(typeof(x_d), ix_d))
         @nexprs $N d->(ixp_d = ix_d + 1)
         A = G.coefs
-        $ex
+        @inbounds ret = $ex
+        ret
     end
 end
 
@@ -44,7 +45,8 @@ function body_gen(::Type{BCnan}, ::Type{InterpLinear}, N::Integer)
         @nexprs $N d->(ix_d = ifloor(x_d); fx_d = x_d - convert(typeof(x_d), ix_d))
         @nexprs $N d->(ixp_d = ix_d + 1)
         A = G.coefs
-        $ex
+        @inbounds ret = $ex
+        ret
     end
 end
 
@@ -61,7 +63,8 @@ function body_gen(::Type{BCna}, ::Type{InterpLinear}, N::Integer)
                             ixp_d = ix_d+1
                         end)
         A = G.coefs
-        $ex
+        @inbounds ret = $ex
+        ret
     end
 end
 
@@ -72,7 +75,8 @@ function body_gen(::Type{BCperiodic}, ::Type{InterpLinear}, N::Integer)
         @nexprs $N d->(ixp_d = (ix_d % size(G,d)) + 1)
         @nexprs $N d->(ix_d = ((ix_d - 1) % size(G,d)) + 1)
         A = G.coefs
-        $ex
+        @inbounds ret = $ex
+        ret
     end
 end
 
@@ -83,7 +87,8 @@ function body_gen(::Type{BCnearest}, ::Type{InterpLinear}, N::Integer)
         @nexprs $N d->(ix_d = ifloor(x_d); fx_d = x_d - convert(typeof(x_d), ix_d))
         @nexprs $N d->(ixp_d = ix_d == size(G,d) ? ix_d : ix_d+1)
         A = G.coefs
-        $ex
+        @inbounds ret = $ex
+        ret
     end
 end
 
