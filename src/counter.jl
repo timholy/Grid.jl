@@ -18,7 +18,7 @@ import Base: done, next, start
 # However, with sz appropriately defined, this version works for
 # arbitrary dimensions.
 
-type Counter
+immutable Counter
     max::Vector{Int}
 end
 Counter(sz::Tuple) = Counter(Int[sz...])
