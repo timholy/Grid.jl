@@ -29,9 +29,9 @@ size(G::InterpGridNew) = size(G.coefs)
 function body_gen(::Type{BCnil}, ::Type{InterpLinear}, N::Integer)
     ex = interplinear_gen(N)
     quote
-        @nexprs $N d->(1 <= x_d < size(G,d) || throw(BoundsError()))
+        @nexprs $N d->(1 <= x_d <= size(G,d) || throw(BoundsError()))
         @nexprs $N d->(ix_d = ifloor(x_d); fx_d = x_d - convert(typeof(x_d), ix_d))
-        @nexprs $N d->(ixp_d = ix_d + 1)
+        @nexprs $N d->(ixp_d = ix_d == size(G,d) ? ix_d : ix_d + 1)
         A = G.coefs
         @inbounds ret = $ex
         ret
@@ -41,9 +41,9 @@ end
 function body_gen(::Type{BCnan}, ::Type{InterpLinear}, N::Integer)
     ex = interplinear_gen(N)
     quote
-        @nexprs $N d->(1 <= x_d < size(G,d) || return(nan(eltype(G))))
+        @nexprs $N d->(1 <= x_d <= size(G,d) || return(nan(eltype(G))))
         @nexprs $N d->(ix_d = ifloor(x_d); fx_d = x_d - convert(typeof(x_d), ix_d))
-        @nexprs $N d->(ixp_d = ix_d + 1)
+        @nexprs $N d->(ixp_d = fx_d == 0 ? ix_d : ix_d + 1)
         A = G.coefs
         @inbounds ret = $ex
         ret
@@ -68,12 +68,36 @@ function body_gen(::Type{BCna}, ::Type{InterpLinear}, N::Integer)
     end
 end
 
+# mod is slow, so this goes to some effort to avoid two calls to mod
+function body_gen(::Type{BCreflect}, ::Type{InterpLinear}, N::Integer)
+    ex = interplinear_gen(N)
+    quote
+        @nexprs $N d->(ix_d = ifloor(x_d); fx_d = x_d - convert(typeof(x_d), ix_d))
+        @nexprs $N d->( len = size(G,d);
+                        if !(1 <= ix_d <= len)
+                            ix_d = mod(ix_d-1, 2len)
+                            if ix_d < len
+                                ix_d = ix_d+1
+                                ixp_d = ix_d < len ? ix_d+1 : len
+                            else
+                                ix_d = 2len-ix_d
+                                ixp_d = ix_d > 1 ? ix_d-1 : 1
+                            end
+                        else
+                            ixp_d = ix_d == len ? len : ix_d + 1
+                        end)
+        A = G.coefs
+        @inbounds ret = $ex
+        ret
+    end
+end
+
 function body_gen(::Type{BCperiodic}, ::Type{InterpLinear}, N::Integer)
     ex = interplinear_gen(N)
     quote
         @nexprs $N d->(ix_d = ifloor(x_d); fx_d = x_d - convert(typeof(x_d), ix_d))
-        @nexprs $N d->(ixp_d = (ix_d % size(G,d)) + 1)
-        @nexprs $N d->(ix_d = ((ix_d - 1) % size(G,d)) + 1)
+        @nexprs $N d->(ix_d = mod(ix_d-1, size(G,d)) + 1)
+        @nexprs $N d->(ixp_d = ix_d < size(G,d) ? ix_d+1 : 1)
         A = G.coefs
         @inbounds ret = $ex
         ret
@@ -86,6 +110,30 @@ function body_gen(::Type{BCnearest}, ::Type{InterpLinear}, N::Integer)
         @nexprs $N d->(x_d = clamp(x_d, 1, size(G,d)))
         @nexprs $N d->(ix_d = ifloor(x_d); fx_d = x_d - convert(typeof(x_d), ix_d))
         @nexprs $N d->(ixp_d = ix_d == size(G,d) ? ix_d : ix_d+1)
+        A = G.coefs
+        @inbounds ret = $ex
+        ret
+    end
+end
+
+function body_gen(::Type{BCfill}, ::Type{InterpLinear}, N::Integer)
+    ex = interplinear_gen(N)
+    quote
+        @nexprs $N d->(1 <= x_d <= size(G,d) || return(G.fillval))
+        @nexprs $N d->(ix_d = ifloor(x_d); fx_d = x_d - convert(typeof(x_d), ix_d))
+        @nexprs $N d->(ixp_d = ix_d == size(G,d) ? ix_d : ix_d + 1)
+        A = G.coefs
+        @inbounds ret = $ex
+        ret
+    end
+end
+
+
+function body_gen(::Type{BCinbounds}, ::Type{InterpLinear}, N::Integer)
+    ex = interplinear_gen(N)
+    quote
+        @nexprs $N d->(ix_d = ifloor(x_d); fx_d = x_d - convert(typeof(x_d), ix_d))
+        ixp_d = ix_d + 1
         A = G.coefs
         @inbounds ret = $ex
         ret
@@ -110,6 +158,7 @@ function interplinear_gen(N::Integer, offsets...)
     end
 end
 
+
 # For type inference
 promote_type_grid(T, x...) = promote_type(T, typeof(x)...)
 
@@ -121,7 +170,7 @@ promote_type_grid(T, x...) = promote_type(T, typeof(x)...)
 # This creates getindex
 for IT in (InterpLinear,)
     # for BC in subtypes(BoundaryCondition)
-    for BC in (BCnil, BCnan, BCna, BCperiodic, BCnearest)
+    for BC in subtypes(BoundaryCondition)
         eval(ngenerate(:N, :(promote_type_grid(T, x...)), :(getindex{T,N}(G::InterpGridNew{T,N,$BC,$IT}, x::NTuple{N,Real}...)),
                       N->body_gen(BC, IT, N)))
     end

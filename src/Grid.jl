@@ -28,6 +28,7 @@ export
     BCperiodic,
     BCnearest,
     BCfill,
+    BCinbounds,
     Counter,
     AbstractInterpGrid,
     InterpGrid,
