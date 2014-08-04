@@ -30,7 +30,7 @@ size(C::CoordInterpGrid) = size(C.grid)
 coordlookup(r::FloatRange,x::Real) = (r.divisor*x-r.start)/r.step + 1.0
 coordlookup(r::StepRange,x::Real) = (x-r.start)/r.step + 1.0
 coordlookup(r::UnitRange,x::Real) = x-r.start + 1
-coordlookup{N,R<:Range,T<:Real}(r::NTuple{N,R},x::NTuple{N,T}) = map(coordlookup,r,x)
+coordlookup{N}(r::NTuple{N},x::NTuple{N}) = map(coordlookup,r,x)
 
 function getindex(C::CoordInterpGrid, x::Real...)
     getindex(C.grid,coordlookup(C.coord,x)...)
