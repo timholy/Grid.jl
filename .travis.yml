@@ -12,8 +12,9 @@ before_install:
   - sudo add-apt-repository ppa:staticfloat/${JULIAVERSION} -y
   - sudo apt-get update -qq -y
   - sudo apt-get install libpcre3-dev julia -y
+  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
 script:
-  - julia -e 'Pkg.init(); run(`ln -s $(pwd()) $(Pkg.dir("Grid"))`); Pkg.pin("Grid"); Pkg.resolve()'
+  - julia -e 'Pkg.init(); Pkg.clone(pwd())'
   - if [ $JULIAVERSION = "julianightlies" ]; then julia --code-coverage test/runtests.jl; fi
   - if [ $JULIAVERSION = "juliarelease" ]; then julia tests/test.jl; fi
   - if [ $JULIAVERSION = "julianightlies" ]; then julia -e 'Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'; fi
