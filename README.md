@@ -70,9 +70,31 @@ julia> 2a
 16.2
 ```
 
-While these examples are one-dimensional, you can do interpolation on arrays of any dimensionality.
+Interpolation of a function on a (evenly-spaced) grid that is scaled and/or shifted can be created
+with `CoordInterpGrid` that is similar to `InterpGrid` but takes a range as additional argument:
+```Julia
+x = -1.0:0.1:1.0
+z = sin(x)
 
-The last two parameters to `InterpGrid` specify the *boundary conditions* (what happens near, or beyond, the edges of the grid) and the *interpolation order*. The choices are specified below:
+zi = CoordInterpGrid(x, z, BCnil, InterpQuadratic)
+
+julia> z1[-1.0]
+-0.8414709848078965
+```
+
+While these examples are one-dimensional, you can do interpolation on arrays of any dimensionality. In two or more dimensions `CoordInterpGrid` expects a tuple of ranges for scaling. For example:
+```Julia
+x = -1.0:0.1:1.0
+y = 2.0:0.5:10.0
+z_2d = Float64[sin(i+j) for i in x, j in y]
+
+z_2di = CoordInterpGrid((x,y), z_2d, BCnil, InterpQuadratic)
+
+julia> z_2di[0.2, 4.1]
+-0.9156696045493824
+```
+
+The last two parameters of `InterpGrid` and `CoordInterpGrid` specify the *boundary conditions* (what happens near, or beyond, the edges of the grid) and the *interpolation order*. The choices are specified below:
 
 <table>
   <tr>
@@ -120,6 +142,7 @@ Note that quadratic and cubic interpolation are implemented through [B-splines](
 Note that `InterpCubic` currently doesn't support all types of boundary conditions; only `BCnil` and `BCnan` are supported.
 
 In `d` dimensions, interpolation references `n^d` grid points, where `n` is the number of grid points used in one dimension. `InterpQuadratic` corresponds to `n=3`, and `InterpCubic` corresponds to `n=4`. Consequently, in higher dimensions quadratic interpolation can be a significant savings relative to cubic spline interpolation.
+
 
 #### Low-level interface
 
