@@ -137,7 +137,7 @@ The interpolation order can be one of the following:
   </tr>
 </table>
 
-Note that quadratic and cubic interpolation are implemented through [B-splines](en.wikipedia.org/wiki/B-spline) which are technically "non-interpolating", meaning that the coefficients of the interpolating polynomial are not the function values at the grid points. `InterpGrid` solves the tridiagonal system of equations for you, so in simple cases you do not need to worry about such details. `InterpQuadratic` is the lowest order of interpolation that yields a continuous gradient, and hence is suitable for use in gradient-based optimization, and `InterpCubic` is similarly the lowest order of interpolation that yields a continuous Hessian.
+Note that quadratic and cubic interpolation are implemented through [B-splines](http://en.wikipedia.org/wiki/B-spline) which are technically "non-interpolating", meaning that the coefficients of the interpolating polynomial are not the function values at the grid points. `InterpGrid` solves the tridiagonal system of equations for you, so in simple cases you do not need to worry about such details. `InterpQuadratic` is the lowest order of interpolation that yields a continuous gradient, and hence is suitable for use in gradient-based optimization, and `InterpCubic` is similarly the lowest order of interpolation that yields a continuous Hessian.
 
 Note that `InterpCubic` currently doesn't support all types of boundary conditions; only `BCnil` and `BCnan` are supported.
 
@@ -148,7 +148,7 @@ In `d` dimensions, interpolation references `n^d` grid points, where `n` is the 
 
 It should be noted that, in addition to the high-level `InterpGrid` interface, **Grid** also has lower-level interfaces. Users who need to extract values from multi-valued functions (e.g., an RGB image, which has three colors at each position) can achieve significant savings by using this low-level interface. The main cost of interpolation is computing the coefficients, and by using the low-level interface you can do this just once at each x location and use it for each color channel.
 
-Here's an example using the low-level interface, starting from the one-dimensional quadratic example above:
+Here's one example using the low-level interface, starting from the one-dimensional quadratic example above:
 ```julia
 y = qfunc(xg)
 # Do the following once
@@ -166,6 +166,43 @@ set_hessian_coordinate(ic, 1, 2)            # change coefs to calc hessian eleme
 h = interp(ic, y)                           # extract hessian element
 ```
 If this were an RGB image, you could call `interp` once for the red color channel, once for the green, and once for the blue, with just one call to `set_position`.
+
+Here is a second example, using a multi-dimensional grid to do multi-value interpolation. Consider that instead of an image, the main data unit of interest is a one-dimensional spectrum, with length `Npixels`, with three parameters which describe a single spectrum: `x1`, `x2`, and `x3`. If you have a grid of simulations that output spectra for regularly spaced values of these parameters, the following example shows how to interpolate a spectrum with an arbitrary value of `x1`, `x2`, and `x3`.
+
+```julia
+# Our spectra are stored as pixels in a 4d grid
+Npixels = 200
+grid = rand(10, 10, 10, Npixels)
+
+# For example, the first spectrum (x1=1, x2=1, x3=1), length Npixels, is stored in 
+# the grid as `raw_spec = grid[:,:,:,1]`
+grid_size = size(grid) #(10,10,10,200)
+grid_strides = strides(grid) #(1,10,100,1000)
+
+strd = stride(grid, 4) #1000
+
+# solve for the generalized interp. coefficients
+# but select only the 1st through 3rd axes for interpolation `dimlist = 1:3`
+interp_invert!(grid, BCnil, InterpCubic, 1:3)   
+
+# prepare for interpolation on this grid
+# but also specify the dimensions and strides of the first three dimensions which we want 
+# to interpolate over
+ic = InterpGridCoefs(eltype(grid), InterpCubic, grid_size[1:3], grid_strides[1:3])    
+
+# Set the grid position to the indices corresponding to the x1=1.5, x2=1.5, x3=1.5 
+# value we wish to interpolate 
+set_position(ic, BCnil, false, false, [1.5, 1.5, 1.5])
+
+# Iterate over the pixels in the spectrum to interpolate each pixel into a new array
+spec = Array(Float64, (Npixels,))
+index = 1
+for i = 1:Npixels
+    spec[i] = interp(ic, grid, index)
+    index += strd
+end
+
+```
 
 ### Restriction and prolongation
 
