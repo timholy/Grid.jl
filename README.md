@@ -120,6 +120,8 @@ The last two parameters of `InterpGrid` and `CoordInterpGrid` specify the *bound
   </tr>
 </table>
 
+Most of these modes are activated by passing them as an argument to `InterpGrid` or `CoordInterpGrid` as done in the description above. To activate BCfill, pass the number which is to be produced outside the grid as an argument, instead of the mode "BCfill". 
+
 The interpolation order can be one of the following:
 
 <table>
