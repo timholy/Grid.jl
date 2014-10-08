@@ -143,10 +143,17 @@ function _getindex{T}(G::InterpGrid{T})
     set_position(G.ic, boundarycondition(G), false, false, G.x)
     interp(G.ic, G.coefs)
 end
-getindex(G::InterpGrid, x::Real) = (setx(G, x); _getindex(G))
-getindex(G::InterpGrid, x::Real, y::Real) = (setx(G, x, y); _getindex(G))
-getindex(G::InterpGrid, x::Real, y::Real, z::Real) = (setx(G, x, y, z); _getindex(G))
-getindex(G::InterpGrid, x::Real...) = (setx(G, x...); _getindex(G))
+getindex{T}(G::InterpGrid{T,1}, x::Real) = (setx(G, x); _getindex(G))
+function getindex{T}(G::InterpGrid{T,1}, x::Real, y::Real)
+    if y != 1
+        throw(BoundsError())
+    end
+    setx(G, x)
+    _getindex(G)
+end
+getindex{T}(G::InterpGrid{T,2}, x::Real, y::Real) = (setx(G, x, y); _getindex(G))
+getindex{T}(G::InterpGrid{T,3}, x::Real, y::Real, z::Real) = (setx(G, x, y, z); _getindex(G))
+getindex{T,N}(G::InterpGrid{T,N}, x::Real...) = (setx(G, x...); _getindex(G))
 
 function _valgrad{T,N}(g::AbstractVector{T}, G::InterpGrid{T,N})
     if length(g) != N
