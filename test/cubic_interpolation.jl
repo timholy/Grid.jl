@@ -43,7 +43,7 @@ hnum = derivative2_numer(func,x)
 
 for BC in (BCnan, BCna)
     yi = InterpGrid(y, BC, InterpCubic)
-    @test_throws ErrorException yi[1.1,2.8]  # wrong dimensionality
+    @test_throws BoundsError yi[1.1,2.8]  # wrong dimensionality
     func = x -> yi[x]
     v,g = valgrad(yi,x)
     gnum = derivative_numer(func,x) 
