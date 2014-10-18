@@ -298,7 +298,7 @@ function getindex{T,N,R<:Number}(G::AbstractInterpGrid{T,N}, x::AbstractVector{R
     v = Array(T, nx, nrest...)
     for c in Counter(nrest)
         for i = 1:nx
-            setx(G, x[i], ntuple(N-1, i->xrest[i][c[i]])...)  # FIXME performance?? May not matter...
+            setx(G, x[i], ntuple(N-1, j->xrest[j][c[j]])...)  # FIXME performance?? May not matter...
             v[i,c...] = _getindex(G)
         end
     end

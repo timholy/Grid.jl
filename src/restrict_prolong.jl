@@ -179,7 +179,7 @@ function restrict{T}(A::Array{T}, dim::Integer, scale::Real)
 end
 restrict{T}(A::Array{T}, dim::Integer) = restrict(A, dim, one(T))
 function restrict(A::Array, flag::Union(Array{Bool},BitArray), scale::Real)
-    func = (A, dim) -> restrict(A, dim, scale)
+    func = (B, dim) -> restrict(B, dim, scale)
     return mapdim(func, A, flag)
 end
 restrict{T}(A::Array{T}, flag::Union(Array{Bool},BitArray)) = restrict(A, flag, one(eltype(T)))
@@ -227,7 +227,7 @@ function restrictb{T}(A::Array{T}, dim::Integer, scale::Real)
 end
 restrictb{T}(A::Array{T}, dim::Integer) = restrictb(A, dim, one(T))
 function restrictb(A::Array, flag::Union(Array{Bool},BitArray), scale::Real)
-    func = (A, dim) -> restrictb(A, dim, scale)
+    func = (B, dim) -> restrictb(B, dim, scale)
     return mapdim(func, A, flag)
 end
 restrictb{T}(A::Array{T}, flag::Union(Array{Bool},BitArray)) = restrictb(A, flag, one(eltype(T)))
@@ -314,7 +314,7 @@ function restrict_extrap(A::Array, dim::Integer, scale::Real)
 end
 restrict_extrap{T}(A::Array{T}, dim::Integer) = restrict_extrap(A, dim, one(T))
 function restrict_extrap(A::Array, flag::Union(Array{Bool},BitArray), scale::Real)
-    func = (A, dim) -> restrict_extrap(A, dim, scale)
+    func = (B, dim) -> restrict_extrap(B, dim, scale)
     return mapdim(func, A, flag)
 end
 restrict_extrap{T}(A::Array{T}, flag::Union(Array{Bool},BitArray)) = restrict_extrap(A, flag, one(T))
