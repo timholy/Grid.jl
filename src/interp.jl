@@ -681,9 +681,9 @@ function interp_coords_1d{T,BC<:Union(BCnearest,BCfill)}(coord1d::Vector{Int}, :
         coord1d[2] = ix
         coord1d[3] = ix+1
         iswrap = false
-        dx = x-ix
+        dx = x-convert(T,ix)
     elseif x <= 1.5
-        ix = one(T)
+        ix = 1
         coord1d[1] = 2
         coord1d[2] = 1
         coord1d[3] = 2
@@ -691,10 +691,10 @@ function interp_coords_1d{T,BC<:Union(BCnearest,BCfill)}(coord1d::Vector{Int}, :
         if x < 1
             dx = zero(T)
         else
-            dx = x-ix
+            dx = x-convert(T,ix)
         end
     else
-        ix = convert(T, len)
+        ix = len
         coord1d[1] = len-1
         coord1d[2] = len
         coord1d[3] = len-1
@@ -702,7 +702,7 @@ function interp_coords_1d{T,BC<:Union(BCnearest,BCfill)}(coord1d::Vector{Int}, :
         if x > len
             dx = zero(T)
         else
-            dx = x-ix
+            dx = x-convert(T,ix)
         end
     end
     return ix, dx, iswrap
