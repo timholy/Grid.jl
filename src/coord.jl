@@ -32,7 +32,19 @@ coordlookup(r::StepRange,x::Real) = (x-r.start)/r.step + 1.0
 coordlookup(r::UnitRange,x::Real) = x-r.start + 1
 coordlookup{N}(r::NTuple{N},x::NTuple{N}) = map(coordlookup,r,x)
 
-function getindex(C::CoordInterpGrid, x::Real...)
+function getindex{T}(C::CoordInterpGrid{T,1}, x::Real)
+    getindex(C.grid,coordlookup(C.coord[1],x))
+end
+function getindex{T}(C::CoordInterpGrid{T,2}, x::Real, y::Real)
+    getindex(C.grid,coordlookup(C.coord[1],x),coordlookup(C.coord[2],y))
+end
+function getindex{T}(C::CoordInterpGrid{T,3}, x::Real, y::Real, z::Real)
+    getindex(C.grid,coordlookup(C.coord[1],x),coordlookup(C.coord[2],y),coordlookup(C.coord[3],z))
+end
+function getindex{T}(C::CoordInterpGrid{T,4}, x::Real, y::Real, z::Real, q::Real)
+    getindex(C.grid,coordlookup(C.coord[1],x),coordlookup(C.coord[2],y),coordlookup(C.coord[3],z),coordlookup(C.coord[4],q))
+end
+function getindex{T,N}(C::CoordInterpGrid{T,N}, x::Real...)
     getindex(C.grid,coordlookup(C.coord,x)...)
 end
 
