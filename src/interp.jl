@@ -53,7 +53,7 @@ function InterpGrid{T<:FloatingPoint, N, BC<:BoundaryCondition, IT<:InterpType}(
     interp_invert!(coefs, BC, IT, 1:N)
     ic = InterpGridCoefs(coefs, IT)
     x = zeros(T, N)
-    InterpGrid{T, N, BC, IT}(coefs, ic, x, nan(T))
+    InterpGrid{T, N, BC, IT}(coefs, ic, x, convert(T, NaN))
 end
 function InterpGrid{T<:FloatingPoint, N, BC<:Union(BCnil,BCnan,BCna)}(A::Array{T, N}, ::Type{BC}, ::Type{InterpCubic})
     # Cubic interpolation requires padding
@@ -61,7 +61,7 @@ function InterpGrid{T<:FloatingPoint, N, BC<:Union(BCnil,BCnan,BCna)}(A::Array{T
     interp_invert!(coefs, BC, InterpCubic, 1:N)
     ic = InterpGridCoefs(coefs, InterpCubic)
     x = zeros(T, N)
-    InterpGrid{T, N, BC, InterpCubic}(coefs, ic, x, nan(T))
+    InterpGrid{T, N, BC, InterpCubic}(coefs, ic, x, convert(T, NaN))
 end
 function InterpGrid{T<:FloatingPoint, N, IT<:InterpType}(A::Array{T, N}, f::Number, ::Type{IT})
     coefs = pad1(A, f, 1:N)
@@ -341,7 +341,7 @@ function InterpIrregular{T<:Number, S, N, BC<:BoundaryCondition, IT<:Union(Inter
     coefs = Array(S, size(A))
     copy!(coefs, A)
     x = zeros(T, N)
-    InterpIrregular{T, S, N, BC, IT}(grid, coefs, x, nan(S))
+    InterpIrregular{T, S, N, BC, IT}(grid, coefs, x, convert(S, NaN))
 end
 function InterpIrregular{IT<:InterpType}(grid, A::Array, f::Number, ::Type{IT})
     iu = InterpIrregular(grid, A, BCfill, IT)
@@ -486,7 +486,7 @@ end
 # "set_gradient_coordinate" followed by "interp" for each component.
 function interp{T}(ic::InterpGridCoefs{T}, A::AbstractArray, index::Int)
     if !ic.valid
-        return nan(T)
+        return convert(T, NaN)
     end
     coef = ic.coef
     if ic.wrap
