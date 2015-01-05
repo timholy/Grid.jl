@@ -1,5 +1,7 @@
 module Grid
 
+using Compat
+
 const mp = module_parent(Grid)
 if isdefined(mp, :Images) && isdefined(mp.Images, :restrict)
     import ..Images.restrict

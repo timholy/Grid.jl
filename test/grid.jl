@@ -1,4 +1,4 @@
-using Grid, Base.Test
+using Grid, Base.Test, Compat
 
 include("derivative_numer.jl")
 
@@ -38,7 +38,7 @@ for n_dims = 1:4
     x[x .== 2.5] = 2.49999
     set_position(ic, BCnearest, true, x)
     @assert ic.wrap == false
-    @assert abs(ic.coef[iceil(length(ic.coef)/2)] .- prod(3/4.-(x.-2).^2)) < eps()
+    @assert abs(ic.coef[ceil(Int, length(ic.coef)/2)] .- prod(3/4.-(x.-2).^2)) < eps()
     index = ic.offset.+ic.offset_base.+1
     indices_generic = similar(index)
     coefs_generic = similar(ic.coef)

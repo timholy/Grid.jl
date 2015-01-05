@@ -591,7 +591,7 @@ function interp_coords_1d(coord1d::Vector{Int}, ::Type{InterpNearest})
 end
 # version for indices
 function interp_coords_1d{BC<:BoundaryCondition}(coord1d::Vector{Int}, ::Type{BC}, ::Type{InterpNearest}, x, len::Int)
-    ix = wrap(BC, iround(real(x)), len)
+    ix = wrap(BC, round(Int, real(x)), len)
     coord1d[1] = ix
     return ix, zero(typeof(x)), false
 end
@@ -603,7 +603,7 @@ function interp_coords_1d(coord1d::Vector{Int}, ::Type{InterpLinear})
 end
 # version for indices
 function interp_coords_1d{T,BC<:BoundaryCondition}(coord1d::Vector{Int}, ::Type{BC}, ::Type{InterpLinear}, x::T, len::Int)
-    ifx = itrunc(x)
+    ifx = trunc(Int, x)
     dx = x-ifx
     ifx -= x < convert(T, ifx)
     ix = wrap(BC, ifx, len)
@@ -613,7 +613,7 @@ function interp_coords_1d{T,BC<:BoundaryCondition}(coord1d::Vector{Int}, ::Type{
     return ix, dx, iswrap
 end
 function interp_coords_1d{T}(coord1d::Vector{Int}, ::Type{BCreflect}, ::Type{InterpLinear}, x::T, len::Int)
-    ix = mod(ifloor(x)-1, 2*len)
+    ix = mod(floor(Int, x)-1, 2*len)
     dx = x-trunc(x)
     if ix < len
         ix += 1
@@ -643,7 +643,7 @@ function interp_coords_1d(coord1d::Vector{Int}, ::Type{InterpQuadratic})
 end
 # versions for indices
 function interp_coords_1d{BC<:BoundaryCondition}(coord1d::Vector{Int}, ::Type{BC}, ::Type{InterpQuadratic}, x, len::Int)
-    ix = iround(real(x))
+    ix = round(Int, real(x))
     dx = x-ix
     ix = wrap(BC, ix, len)
     coord1d[2] = ix
@@ -661,7 +661,7 @@ end
 # BCnil, Bnan, BCna: for 1 <= x <= 1.5, continue the quadratic centered at x=2
 function interp_coords_1d{BC<:Union(BCnil,BCnan,BCna)}(coord1d::Vector{Int}, ::Type{BC}, ::Type{InterpQuadratic}, x, len::Int)
     if x > 1.5 && x+0.5 < len
-        ix = iround(real(x))
+        ix = round(Int, real(x))
     elseif x <= 1.5
         ix = 2
     else
@@ -676,7 +676,7 @@ end
 # BCnearest & BCfill: for 1 <= x <= 1.5, ensure the slope tends to 0 at x=1
 function interp_coords_1d{T,BC<:Union(BCnearest,BCfill)}(coord1d::Vector{Int}, ::Type{BC}, ::Type{InterpQuadratic}, x::T, len::Int)
     if x > 1.5 && x+0.5 < len
-        ix = iround(real(x))
+        ix = round(Int, real(x))
         coord1d[1] = ix-1
         coord1d[2] = ix
         coord1d[3] = ix+1
@@ -708,7 +708,7 @@ function interp_coords_1d{T,BC<:Union(BCnearest,BCfill)}(coord1d::Vector{Int}, :
     return ix, dx, iswrap
 end
 function interp_coords_1d(coord1d::Vector{Int}, ::Type{BCreflect}, ::Type{InterpQuadratic}, x, len::Int)
-    ix = iround(real(x))
+    ix = round(Int, real(x))
     dx = x-ix
     ix = mod(ix-1, 2*len)
     if ix < len
@@ -738,7 +738,7 @@ function interp_coords_1d(coord1d::Vector{Int}, ::Type{InterpCubic})
 end
 #versions for indices
 function interp_coords_1d{BC<:BoundaryCondition}(coord1d::Vector{Int}, ::Type{BC}, ::Type{InterpCubic}, x, len::Int)
-    ix = itrunc(real(x))
+    ix = trunc(Int, real(x))
     dx = x - ix
     coord1d[2] = ix
     # the outermost non-wrapping indices are 2 and len-2
