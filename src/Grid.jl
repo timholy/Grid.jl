@@ -1,6 +1,7 @@
 module Grid
 
 using Compat
+using WoodburyMatrices
 
 const mp = module_parent(Grid)
 if isdefined(mp, :Images) && isdefined(mp.Images, :restrict)
