@@ -603,18 +603,18 @@ function interp_coords_1d(coord1d::Vector{Int}, ::Type{InterpLinear})
 end
 # version for indices
 function interp_coords_1d{T,BC<:BoundaryCondition}(coord1d::Vector{Int}, ::Type{BC}, ::Type{InterpLinear}, x::T, len::Int)
-    ifx = trunc(Int, x)
+    ifx = floor(Int, x)
     dx = x-ifx
     ifx -= x < convert(T, ifx)
     ix = wrap(BC, ifx, len)
     @inbounds coord1d[1] = ix
-    iswrap = (ix == len && dx > 0)
-    @inbounds coord1d[2] = wrap(BC, ix+1, len)
+    iswrap = (ix == len && dx > 0) || (ix == 1 && ifx < 1)
+    @inbounds coord1d[2] = iswrap ? ix : wrap(BC, ix+1, len)
     return ix, dx, iswrap
 end
 function interp_coords_1d{T}(coord1d::Vector{Int}, ::Type{BCreflect}, ::Type{InterpLinear}, x::T, len::Int)
     ix = mod(floor(Int, x)-1, 2*len)
-    dx = x-trunc(x)
+    dx = x-floor(Int, x)
     if ix < len
         ix += 1
         ixp = ix+1
