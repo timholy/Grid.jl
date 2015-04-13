@@ -1,7 +1,7 @@
 module Grid
 
 using Compat
-if VERSION < v"0.4.0-dev+3066"
+if VERSION > v"0.4.0-dev+3066"
     using WoodburyMatrices
 end
 
