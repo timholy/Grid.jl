@@ -1,6 +1,6 @@
 # Grid operations for the Julia language
 
-[![Grid](http://pkg.julialang.org/badges/Grid_0.3.svg)](http://pkg.julialang.org/?pkg=Grid&ver=0.3)
+[![Grid](http://pkg.julialang.org/badges/Grid_release.svg)](http://pkg.julialang.org/?pkg=Grid&ver=release)
 [![Build Status](https://travis-ci.org/timholy/Grid.jl.svg?branch=master)](https://travis-ci.org/timholy/Grid.jl)
 [![Coverage Status](https://coveralls.io/repos/timholy/Grid.jl/badge.png?branch=master)](https://coveralls.io/r/timholy/Grid.jl?branch=master)
 
