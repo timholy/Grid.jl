@@ -1,6 +1,9 @@
 module Grid
 
 using Compat
+if VERSION > v"0.4.0-dev+3066"
+    using WoodburyMatrices
+end
 
 const mp = module_parent(Grid)
 if isdefined(mp, :Images) && isdefined(mp.Images, :restrict)
