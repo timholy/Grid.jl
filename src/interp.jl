@@ -357,7 +357,7 @@ end
 function _getindexii{T,S}(G::InterpIrregular{T,S,1,BCnil}, x::Number)
     g = G.grid[1]
     i = (x == g[1]) ? 2 : searchsortedfirst(g, x)
-    (i == 1 || i == length(g)+1) ? error(BoundsError) : _interpu(x, g, i, G.coefs, interptype(G))
+    (i == 1 || i == length(g)+1) ? throw(BoundsError()) : _interpu(x, g, i, G.coefs, interptype(G))
 end
 function _getindexii{T,S}(G::InterpIrregular{T,S,1,BCnearest}, x::Number)
     g = G.grid[1]

@@ -6,7 +6,7 @@ d = 5.9
 cfunc = x -> a*x.^3 .+ b*x.^2 .+ c*x .+ d
 cgrad = x -> 3a*x.^2 .+ 2b*x .+ c
 chess = x -> 6a*x .+ 2b
-xg = Float64[1:8]
+xg = Float64[1:8;]
 y = cfunc(xg)
 
 # Low-level interface

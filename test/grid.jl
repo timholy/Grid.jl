@@ -97,17 +97,17 @@ for bc in (BCnil, BCnan, BCna, BCreflect, BCperiodic, BCnearest, BCfill)
     end
 end
 
-A = float([1:4])
+A = float([1:4;])
 for it in (InterpNearest, InterpLinear, InterpQuadratic)
     ig = InterpGrid(A, BCreflect, it)
     y = ig[-3:8]
-    @assert all(abs(y-A[[4:-1:1,1:4,4:-1:1]]) .< EPS)
+    @assert all(abs(y-A[[4:-1:1;1:4;4:-1:1]]) .< EPS)
     @test_throws ErrorException ig[-3:8, 2:4]
 end
 for it in (InterpNearest, InterpLinear, InterpQuadratic)
     ig = InterpGrid(A, BCnearest, it)
     y = ig[0:6]
-    @assert all(abs(y-A[[1,1:4,4,4]]) .< EPS)
+    @assert all(abs(y-A[[1;1:4;4;4]]) .< EPS)
 end
 for it in (InterpNearest, InterpLinear, InterpQuadratic)
     ig = InterpGrid(A, BCnil, it)
@@ -125,7 +125,7 @@ c = 2.3
 a = 8.1
 o = 1.6
 qfunc = x -> a*(x.-c).^2 .+ o
-xg = Float64[1:5]
+xg = Float64[1:5;]
 y = qfunc(xg)
 yc = copy(y)
 interp_invert!(yc, BCnan, InterpQuadratic)
@@ -199,22 +199,22 @@ hnum = derivative2_numer(func, tuple(x...), (2, 2))
 @test_approx_eq_eps h2[2,2] hnum 1e-5
 
 # Nearest-neighbor value and gradient
-y = [float(2:6)]
+y = [float(2:6);]
 ig = InterpGrid(y, BCnan, InterpNearest)
 x = 1.8
 v, g = valgrad(ig, x)
 @assert v == 3
 @assert g == 0
-@assert ig[1.8:5.4] == [3:6]
+@assert ig[1.8:5.4] == [3:6;]
 
 # Linear value and gradient
-y = [float(2:6)]
+y = [float(2:6);]
 ig = InterpGrid(y, BCnan, InterpLinear)
 x = 1.8
 v, g = valgrad(ig, x)
 @assert abs(v - 2.8) < Eps
 @assert abs(g - 1.0) < Eps
-@assert all(abs(ig[1.8:5.4] - [2.8:5.8]) .< Eps)
+@assert all(abs(ig[1.8:5.4] - [2.8:5.8;]) .< Eps)
 
 #### Interpolation on irregularly-spaced grids ####
 x = [100.0,110.0,150.0]
