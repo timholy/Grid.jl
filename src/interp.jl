@@ -323,7 +323,7 @@ type InterpIrregular{T<:Number, S, N, BC<:BoundaryCondition, IT<:InterpType} <: 
 end
 InterpIrregular{T<:Number, BC<:BoundaryCondition, IT<:Union(InterpNearest,InterpLinear)}(grid::Vector{T}, A::AbstractArray, ::Type{BC}, ::Type{IT}) =
     InterpIrregular(Vector{T}[grid], A, BC, IT) # special 1d syntax
-InterpIrregular{T<:Number, BC<:BoundaryCondition, IT<:Union(InterpNearest,InterpLinear)}(grid::(Vector{T}...), A::AbstractArray, ::Type{BC}, ::Type{IT}) =
+InterpIrregular{T<:Number, BC<:BoundaryCondition, IT<:Union(InterpNearest,InterpLinear)}(grid::(@compat Tuple{Vararg{Vector{T}}}), A::AbstractArray, ::Type{BC}, ::Type{IT}) =
     InterpIrregular(Vector{T}[grid...], A, BC, IT)
 function InterpIrregular{T<:Number, S, N, BC<:BoundaryCondition, IT<:Union(InterpNearest,InterpLinear)}(grid::Vector{Vector{T}}, A::AbstractArray{S, N}, ::Type{BC}, ::Type{IT})
     if length(grid) != 1
