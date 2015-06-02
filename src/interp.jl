@@ -298,7 +298,7 @@ function getindex{T,N,R<:Number}(G::AbstractInterpGrid{T,N}, x::AbstractVector{R
     v = Array(T, nx, nrest...)
     for c in Counter(nrest)
         for i = 1:nx
-            setx(G, x[i], ntuple(N-1, j->xrest[j][c[j]])...)  # FIXME performance?? May not matter...
+            setx(G, x[i], ntuple(j->xrest[j][c[j]], N-1)...)  # FIXME performance?? May not matter...
             v[i,c...] = _getindex(G)
         end
     end
@@ -809,7 +809,7 @@ eltype{T, N, BC, IT}(G::InterpGrid{T, N, BC, IT}) = T
 ndims{T, N, BC, IT}(G::InterpGrid{T, N, BC, IT}) = N
 boundarycondition{T, N, BC, IT}(G::InterpGrid{T, N, BC, IT}) = BC
 interptype{T, N, BC, IT}(G::InterpGrid{T, N, BC, IT}) = IT
-size{T,N}(G::InterpGrid{T,N,BCfill}) = ntuple(N, i->size(G.coefs,i)-2)
+size{T,N}(G::InterpGrid{T,N,BCfill}) = ntuple(i->size(G.coefs,i)-2, N)
 size{T,N}(G::InterpGrid{T,N,BCfill}, i::Integer) = size(G.coefs, i)-2
 size{T,N}(G::InterpGrid{T,N}) = size(G.coefs)
 size{T,N}(G::InterpGrid{T,N}, i::Integer) = size(G.coefs, i)
