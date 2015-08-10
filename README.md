@@ -6,6 +6,8 @@
 
 Continuous objects, such as functions or images, are frequently sampled on a regularly-spaced grid of points. The **Grid** module provides support for common operations on such objects. Currently, the two main operations are *interpolation* and *restriction/prolongation*. Restriction and prolongation are frequently used for solving partial differential equations by multigrid methods, but can also be used simply as fast, antialiased methods for two-fold resolution changes (e.g., in computing thumbnails).
 
+Note: if you're running at least a pre-release of julia 0.4 and wand only interpolation, you might be interested in the [Interpolations](https://github.com/tlycken/Interpolations.jl) package, which is the intended successor to Grid. However, as of August 2015, not all features of Grid are yet implemented in Interpolations.
+
 ## Installation
 
 Within Julia, use the package manager:
