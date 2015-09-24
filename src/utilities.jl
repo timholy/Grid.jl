@@ -1,7 +1,7 @@
 ## Utilities
 
 to_tuple(v::Vector) = tuple(v...)
-to_tuple(t::Union(Tuple, NTuple)) = t
+to_tuple(t::Union{Tuple, NTuple}) = t
 
 # Apply a function to each dimension of an array, conditional upon a boolean
 function mapdim(func::Function, A::Array, flag)

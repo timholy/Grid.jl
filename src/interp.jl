@@ -39,13 +39,13 @@ end
 # low-level interface.)
 abstract AbstractInterpGrid{T, N, BC<:BoundaryCondition, IT<:InterpType} <: AbstractArray{T,N}
 
-type InterpGrid{T<:FloatingPoint, N, BC<:BoundaryCondition, IT<:InterpType} <: AbstractInterpGrid{T,N,BC,IT}
+type InterpGrid{T<:AbstractFloat, N, BC<:BoundaryCondition, IT<:InterpType} <: AbstractInterpGrid{T,N,BC,IT}
     coefs::Array{T,N}
     ic::InterpGridCoefs{T, IT}
     x::Vector{T}
     fillval::T  # used only for BCfill (if ever)
 end
-function InterpGrid{T<:FloatingPoint, N, BC<:BoundaryCondition, IT<:InterpType}(A::Array{T, N}, ::Type{BC}, ::Type{IT})
+function InterpGrid{T<:AbstractFloat, N, BC<:BoundaryCondition, IT<:InterpType}(A::Array{T, N}, ::Type{BC}, ::Type{IT})
     if BC == BCfill
         error("Construct BCfill InterpGrids by supplying the fill value")
     end
@@ -55,7 +55,7 @@ function InterpGrid{T<:FloatingPoint, N, BC<:BoundaryCondition, IT<:InterpType}(
     x = zeros(T, N)
     InterpGrid{T, N, BC, IT}(coefs, ic, x, convert(T, NaN))
 end
-function InterpGrid{T<:FloatingPoint, N, BC<:Union(BCnil,BCnan,BCna)}(A::Array{T, N}, ::Type{BC}, ::Type{InterpCubic})
+function InterpGrid{T<:AbstractFloat, N, BC<:Union{BCnil,BCnan,BCna}}(A::Array{T, N}, ::Type{BC}, ::Type{InterpCubic})
     # Cubic interpolation requires padding
     coefs=pad1(copy(A),0,1:N)
     interp_invert!(coefs, BC, InterpCubic, 1:N)
@@ -63,7 +63,7 @@ function InterpGrid{T<:FloatingPoint, N, BC<:Union(BCnil,BCnan,BCna)}(A::Array{T
     x = zeros(T, N)
     InterpGrid{T, N, BC, InterpCubic}(coefs, ic, x, convert(T, NaN))
 end
-function InterpGrid{T<:FloatingPoint, N, IT<:InterpType}(A::Array{T, N}, f::Number, ::Type{IT})
+function InterpGrid{T<:AbstractFloat, N, IT<:InterpType}(A::Array{T, N}, f::Number, ::Type{IT})
     coefs = pad1(A, f, 1:N)
     interp_invert!(coefs, BCnearest, IT, 1:N)
     ic = InterpGridCoefs(coefs, IT)
@@ -116,19 +116,19 @@ function setx{T,N}(G::InterpGrid{T,N,BCfill}, x::Real...)
     end
 end
 # InterpCubic also needs to compensate for padding
-setx{T,BC<:Union(BCna,BCnan,BCnil)}(G::InterpGrid{T,1,BC,InterpCubic}, x::Real) = @inbounds G.x[1] = x+1
-function setx{T,BC<:Union(BCna,BCnan,BCnil)}(G::InterpGrid{T,2,BC,InterpCubic}, x::Real, y::Real)
+setx{T,BC<:Union{BCna,BCnan,BCnil}}(G::InterpGrid{T,1,BC,InterpCubic}, x::Real) = @inbounds G.x[1] = x+1
+function setx{T,BC<:Union{BCna,BCnan,BCnil}}(G::InterpGrid{T,2,BC,InterpCubic}, x::Real, y::Real)
     xG = G.x
     @inbounds xG[1] = x+1
     @inbounds xG[2] = y+1
 end
-function setx{T,BC<:Union(BCna,BCnan,BCnil)}(G::InterpGrid{T,3,BC,InterpCubic}, x::Real, y::Real, z::Real)
+function setx{T,BC<:Union{BCna,BCnan,BCnil}}(G::InterpGrid{T,3,BC,InterpCubic}, x::Real, y::Real, z::Real)
     xG = G.x
     @inbounds xG[1] = x+1
     @inbounds xG[2] = y+1
     @inbounds xG[3] = z+1
 end
-function setx{T,N,BC<:Union(BCna,BCnan,BCnil)}(G::InterpGrid{T,N,BC,InterpCubic}, x::Real...)
+function setx{T,N,BC<:Union{BCna,BCnan,BCnil}}(G::InterpGrid{T,N,BC,InterpCubic}, x::Real...)
     if length(x) != N
         error("Incorrect number of dimensions supplied")
     end
@@ -321,11 +321,11 @@ type InterpIrregular{T<:Number, S, N, BC<:BoundaryCondition, IT<:InterpType} <: 
     x::Vector{T}
     fillval::S  # used only for BCfill (if ever)
 end
-InterpIrregular{T<:Number, BC<:BoundaryCondition, IT<:Union(InterpNearest,InterpLinear)}(grid::Vector{T}, A::AbstractArray, ::Type{BC}, ::Type{IT}) =
+InterpIrregular{T<:Number, BC<:BoundaryCondition, IT<:Union{InterpNearest,InterpLinear}}(grid::Vector{T}, A::AbstractArray, ::Type{BC}, ::Type{IT}) =
     InterpIrregular(Vector{T}[grid], A, BC, IT) # special 1d syntax
-InterpIrregular{T<:Number, BC<:BoundaryCondition, IT<:Union(InterpNearest,InterpLinear)}(grid::(@compat Tuple{Vararg{Vector{T}}}), A::AbstractArray, ::Type{BC}, ::Type{IT}) =
+InterpIrregular{T<:Number, BC<:BoundaryCondition, IT<:Union{InterpNearest,InterpLinear}}(grid::(@compat Tuple{Vararg{Vector{T}}}), A::AbstractArray, ::Type{BC}, ::Type{IT}) =
     InterpIrregular(Vector{T}[grid...], A, BC, IT)
-function InterpIrregular{T<:Number, S, N, BC<:BoundaryCondition, IT<:Union(InterpNearest,InterpLinear)}(grid::Vector{Vector{T}}, A::AbstractArray{S, N}, ::Type{BC}, ::Type{IT})
+function InterpIrregular{T<:Number, S, N, BC<:BoundaryCondition, IT<:Union{InterpNearest,InterpLinear}}(grid::Vector{Vector{T}}, A::AbstractArray{S, N}, ::Type{BC}, ::Type{IT})
     if length(grid) != 1
         error("Sorry, for now only 1d is supported")
     end
@@ -349,7 +349,7 @@ function InterpIrregular{IT<:InterpType}(grid, A::Array, f::Number, ::Type{IT})
     iu
 end
 
-function _getindexii{T,S,BC<:Union(BCfill,BCna,BCnan)}(G::InterpIrregular{T,S,1,BC}, x::Number)
+function _getindexii{T,S,BC<:Union{BCfill,BCna,BCnan}}(G::InterpIrregular{T,S,1,BC}, x::Number)
     g = G.grid[1]
     i = (x == g[1]) ? 2 : searchsortedfirst(g, x)
     (i == 1 || i == length(g)+1) ? G.fillval : _interpu(x, g, i, G.coefs, interptype(G))
@@ -537,7 +537,7 @@ end
 # and/or specific dimensions. For example, an RGB image might be
 # interpolated with respect to the spatial dimensions but not the
 # dimension that holds color.
-function InterpGridCoefs{T,IT<:InterpType}(::Type{T}, ::Type{IT}, dims::Union(Dims,Vector{Int}), strides::Union(Dims,Vector{Int}))
+function InterpGridCoefs{T,IT<:InterpType}(::Type{T}, ::Type{IT}, dims::Union{Dims,Vector{Int}}, strides::Union{Dims,Vector{Int}})
     N = length(strides)
     if length(dims) != N
         error("Length of dims and strides must match")
@@ -579,10 +579,10 @@ npoints(::Type{InterpCubic}) = 4
 
 # Test whether a given coordinate will yield an interpolated result
 isvalid{BC<:BoundaryCondition,IT<:InterpType}(::Type{BC},::Type{IT}, x, len::Int) = true
-isvalid{BC<:Union(BCnil,BCnan,BCna)}(::Type{BC}, ::Type{InterpNearest}, x, len::Int) = x >= 0.5 && x-0.5 <= len
-isvalid{BC<:Union(BCnil,BCnan,BCna)}(::Type{BC}, ::Type{InterpLinear}, x, len::Int) = x >= 1 && x <= len
-isvalid{BC<:Union(BCnil,BCnan,BCna)}(::Type{BC}, ::Type{InterpQuadratic}, x, len::Int) = x >= 1 && x <= len
-isvalid{BC<:Union(BCnil,BCnan,BCna)}(::Type{BC}, ::Type{InterpCubic}, x, len::Int) = 1 <= x <= len -1
+isvalid{BC<:Union{BCnil,BCnan,BCna}}(::Type{BC}, ::Type{InterpNearest}, x, len::Int) = x >= 0.5 && x-0.5 <= len
+isvalid{BC<:Union{BCnil,BCnan,BCna}}(::Type{BC}, ::Type{InterpLinear}, x, len::Int) = x >= 1 && x <= len
+isvalid{BC<:Union{BCnil,BCnan,BCna}}(::Type{BC}, ::Type{InterpQuadratic}, x, len::Int) = x >= 1 && x <= len
+isvalid{BC<:Union{BCnil,BCnan,BCna}}(::Type{BC}, ::Type{InterpCubic}, x, len::Int) = 1 <= x <= len -1
 
 
 # version for offsets
@@ -659,7 +659,7 @@ function interp_coords_1d{BC<:BoundaryCondition}(coord1d::Vector{Int}, ::Type{BC
 end
 # for InterpQuadratic, several require special handling
 # BCnil, Bnan, BCna: for 1 <= x <= 1.5, continue the quadratic centered at x=2
-function interp_coords_1d{BC<:Union(BCnil,BCnan,BCna)}(coord1d::Vector{Int}, ::Type{BC}, ::Type{InterpQuadratic}, x, len::Int)
+function interp_coords_1d{BC<:Union{BCnil,BCnan,BCna}}(coord1d::Vector{Int}, ::Type{BC}, ::Type{InterpQuadratic}, x, len::Int)
     if x > 1.5 && x+0.5 < len
         ix = round(Int, real(x))
     elseif x <= 1.5
@@ -674,7 +674,7 @@ function interp_coords_1d{BC<:Union(BCnil,BCnan,BCna)}(coord1d::Vector{Int}, ::T
     return ix, dx, false
 end
 # BCnearest & BCfill: for 1 <= x <= 1.5, ensure the slope tends to 0 at x=1
-function interp_coords_1d{T,BC<:Union(BCnearest,BCfill)}(coord1d::Vector{Int}, ::Type{BC}, ::Type{InterpQuadratic}, x::T, len::Int)
+function interp_coords_1d{T,BC<:Union{BCnearest,BCfill}}(coord1d::Vector{Int}, ::Type{BC}, ::Type{InterpQuadratic}, x::T, len::Int)
     if x > 1.5 && x+0.5 < len
         ix = round(Int, real(x))
         coord1d[1] = ix-1
@@ -906,10 +906,10 @@ function interp_invert!{BC<:BoundaryCondition}(A::Array, ::Type{BC}, ::Type{Inte
     end
     A
 end
-interp_invert!{BC<:Union(BoundaryCondition,Number)}(A::Array, ::Type{BC}, IT) = interp_invert!(A, BC, IT, 1:ndims(A))
-interp_invert!{BC<:Union(BoundaryCondition,Number)}(A::Array, ::Type{BC}, IT, dimlist...) = interp_invert!(A, BC, IT, dimlist)
+interp_invert!{BC<:Union{BoundaryCondition,Number}}(A::Array, ::Type{BC}, IT) = interp_invert!(A, BC, IT, 1:ndims(A))
+interp_invert!{BC<:Union{BoundaryCondition,Number}}(A::Array, ::Type{BC}, IT, dimlist...) = interp_invert!(A, BC, IT, dimlist)
 
-function _interp_invert_matrix{BC<:Union(BCnil,BCnan,BCna),T}(::Type{BC}, ::Type{InterpQuadratic}, dl::Vector{T}, d::Vector{T}, du::Vector{T})
+function _interp_invert_matrix{BC<:Union{BCnil,BCnan,BCna},T}(::Type{BC}, ::Type{InterpQuadratic}, dl::Vector{T}, d::Vector{T}, du::Vector{T})
     # For these, the quadratic centered on x=2 is continued down to
     # 1 rather than terminating at 1.5
     n = length(d)
@@ -943,14 +943,14 @@ function _interp_invert_matrix{T}(::Type{BCperiodic}, ::Type{InterpQuadratic}, d
     V[1,n] = V[2,1] = 1
     M = Woodbury(MT, U, C, V)
 end
-function _interp_invert_matrix{T,BC<:Union(BCnearest,BCfill)}(::Type{BC}, ::Type{InterpQuadratic}, dl::Vector{T}, d::Vector{T}, du::Vector{T})
+function _interp_invert_matrix{T,BC<:Union{BCnearest,BCfill}}(::Type{BC}, ::Type{InterpQuadratic}, dl::Vector{T}, d::Vector{T}, du::Vector{T})
     n = length(d)
     du[1] += 1/8
     dl[n-1] += 1/8
     M = lufact!(Tridiagonal(dl, d, du))
 end
 
-function _interp_invert_matrix{BC<:Union(BCnil,BCnan,BCna),T}(::Type{BC}, ::Type{InterpCubic}, dl::Vector{T}, d::Vector{T}, du::Vector{T})
+function _interp_invert_matrix{BC<:Union{BCnil,BCnan,BCna},T}(::Type{BC}, ::Type{InterpCubic}, dl::Vector{T}, d::Vector{T}, du::Vector{T})
     # The most common way to terminate Cubic B-spline interpolations at the edges is by setting the second derivative to 0
     # Doing this yields c_1 = f_1 and c_N = f_N at the low and high end respectively
     # The BC also adds the equations a_0 = 2a_1 - a_2 for a ghost point a_0 outside the lower end of the domain,

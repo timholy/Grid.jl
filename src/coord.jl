@@ -1,6 +1,6 @@
 import Base.FloatRange
 
-type CoordInterpGrid{T<:FloatingPoint, N, BC<:BoundaryCondition, IT<:InterpType, R} <: AbstractInterpGrid{T,N}
+type CoordInterpGrid{T<:AbstractFloat, N, BC<:BoundaryCondition, IT<:InterpType, R} <: AbstractInterpGrid{T,N}
     coord::R
     grid::InterpGrid{T,N,BC,IT}
     function CoordInterpGrid(coord::NTuple{N,Range}, grid::InterpGrid{T,N,BC,IT})
@@ -13,14 +13,14 @@ function CoordInterpGrid{T,N,BC,IT}(coord::NTuple{N,Range}, grid::InterpGrid{T,N
     CoordInterpGrid{T,N,BC,IT,typeof(coord)}(coord,grid)
 end
 
-function CoordInterpGrid{T<:FloatingPoint,R<:Range}(coord::R, grid::InterpGrid{T,1})
+function CoordInterpGrid{T<:AbstractFloat,R<:Range}(coord::R, grid::InterpGrid{T,1})
     CoordInterpGrid((coord,),grid)
 end
 
-function CoordInterpGrid{N,T<:FloatingPoint}(coord::NTuple{N,Range}, A::Array{T,N}, args...)
+function CoordInterpGrid{N,T<:AbstractFloat}(coord::NTuple{N,Range}, A::Array{T,N}, args...)
     CoordInterpGrid(coord,InterpGrid(A,args...))
 end
-function CoordInterpGrid{R<:Range,T<:FloatingPoint}(coord::R,A::Array{T,1},args...)
+function CoordInterpGrid{R<:Range,T<:AbstractFloat}(coord::R,A::Array{T,1},args...)
     CoordInterpGrid((coord,),InterpGrid(A,args...))
 end
 

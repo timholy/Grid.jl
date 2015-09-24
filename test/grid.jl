@@ -53,7 +53,7 @@ const EPS = sqrt(eps())
 for bc in (BCnil, BCnan, BCna, BCreflect, BCperiodic, BCnearest, BCfill)
     for it in (InterpNearest, InterpLinear, InterpQuadratic, InterpCubic)
         # skip boundary conditions that aren't implemented for cubic yet
-        if it == InterpCubic && !(bc <: Union(BCnan,BCna,BCnil))
+        if it == InterpCubic && !(bc <: Union{BCnan,BCna,BCnil})
             continue
         end
         ig = bc == BCfill ? InterpGrid(A, 0.0, it) : InterpGrid(A, bc, it)
@@ -70,7 +70,7 @@ A = randn(4,5,4)
 for bc in (BCnil, BCnan, BCna, BCreflect, BCperiodic, BCnearest, BCfill)
     for it in (InterpNearest, InterpLinear, InterpQuadratic, InterpCubic)
         # skip boundary conditions that aren't implemented for cubic yet
-        if it == InterpCubic && !(bc <: Union(BCnan,BCna,BCnil))
+        if it == InterpCubic && !(bc <: Union{BCnan,BCna,BCnil})
             continue
         end
         ig = bc == BCfill ? InterpGrid(A, 0.0, it) : InterpGrid(A, bc, it)
@@ -85,7 +85,7 @@ A = randn(4,5,4,3)
 for bc in (BCnil, BCnan, BCna, BCreflect, BCperiodic, BCnearest, BCfill)
     for it in (InterpNearest, InterpLinear, InterpQuadratic, InterpCubic)
         # skip boundary conditions that aren't implemented for cubic yet
-        if it == InterpCubic && !(bc <: Union(BCnan,BCna,BCnil))
+        if it == InterpCubic && !(bc <: Union{BCnan,BCna,BCnil})
             continue
         end
         ig = bc == BCfill ? InterpGrid(A, 0.0, it) : InterpGrid(A, bc, it)

@@ -16,11 +16,11 @@ type BCfill <: BoundaryCondition; end # Use specified fill value
 # particularly for filtering operations.
 
 #needs_validating{BC<:BoundaryCondition}(::Type{BC}) = false
-#needs_validating{BC<:Union(BCnil,BCnan,BCna)}(::Type{BC}) = true
+#needs_validating{BC<:Union{BCnil,BCnan,BCna}}(::Type{BC}) = true
 isvalid{BC<:BoundaryCondition}(::Type{BC}, pos::Int, min::Int, max::Int) = true
-isvalid{BC<:Union(BCnan,BCna)}(::Type{BC}, pos::Int, min::Int, max::Int) = min <= pos <= max
+isvalid{BC<:Union{BCnan,BCna}}(::Type{BC}, pos::Int, min::Int, max::Int) = min <= pos <= max
 wrap{BC<:BoundaryCondition}(::Type{BC}, pos::Int, len::Int) = pos
 wrap(::Type{BCreflect}, pos::Int, len::Int) = wraprefl(mod(pos-1, 2*len), len)
 wraprefl(posrem::Int, len::Int) = posrem < len ? posrem+1 : 2*len-posrem
 wrap(::Type{BCperiodic}, pos::Int, len::Int) = mod(pos-1, len) + 1
-wrap{BC<:Union(BCnearest,BCfill)}(::Type{BC}, pos::Int, len::Int) = pos < 1 ? 1 : (pos > len ? len : pos)
+wrap{BC<:Union{BCnearest,BCfill}}(::Type{BC}, pos::Int, len::Int) = pos < 1 ? 1 : (pos > len ? len : pos)
