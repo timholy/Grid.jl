@@ -41,6 +41,8 @@ export
     InterpGridCoefs,
     InterpIrregular,
     InterpType,
+    InterpForward,
+    InterpBackward,
     InterpNearest,
     InterpLinear,
     InterpQuadratic,
