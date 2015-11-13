@@ -321,11 +321,11 @@ type InterpIrregular{T<:Number, S, N, BC<:BoundaryCondition, IT<:InterpType} <: 
     x::Vector{T}
     fillval::S  # used only for BCfill (if ever)
 end
-InterpIrregular{T<:Number, BC<:BoundaryCondition, IT<:Union{InterpNearest,InterpLinear}}(grid::Vector{T}, A::AbstractArray, ::Type{BC}, ::Type{IT}) =
+InterpIrregular{T<:Number, BC<:BoundaryCondition, IT<:Union{InterpForward,InterpBackward,InterpNearest,InterpLinear}}(grid::Vector{T}, A::AbstractArray, ::Type{BC}, ::Type{IT}) =
     InterpIrregular(Vector{T}[grid], A, BC, IT) # special 1d syntax
-InterpIrregular{T<:Number, BC<:BoundaryCondition, IT<:Union{InterpNearest,InterpLinear}}(grid::(@compat Tuple{Vararg{Vector{T}}}), A::AbstractArray, ::Type{BC}, ::Type{IT}) =
+InterpIrregular{T<:Number, BC<:BoundaryCondition, IT<:Union{InterpForward,InterpBackward,InterpNearest,InterpLinear}}(grid::(@compat Tuple{Vararg{Vector{T}}}), A::AbstractArray, ::Type{BC}, ::Type{IT}) =
     InterpIrregular(Vector{T}[grid...], A, BC, IT)
-function InterpIrregular{T<:Number, S, N, BC<:BoundaryCondition, IT<:Union{InterpNearest,InterpLinear}}(grid::Vector{Vector{T}}, A::AbstractArray{S, N}, ::Type{BC}, ::Type{IT})
+function InterpIrregular{T<:Number, S, N, BC<:BoundaryCondition, IT<:Union{InterpForward,InterpBackward,InterpNearest,InterpLinear}}(grid::Vector{Vector{T}}, A::AbstractArray{S, N}, ::Type{BC}, ::Type{IT})
     if length(grid) != 1
         error("Sorry, for now only 1d is supported")
     end
@@ -368,6 +368,8 @@ end
 getindex(G::InterpIrregular, x::Real) = _getindexii(G, x)
 getindex(G::InterpIrregular, x::Number) = _getindexii(G, x)
 
+_interpu(x, g, i, coefs, ::Type{InterpForward}) = coefs[i]
+_interpu(x, g, i, coefs, ::Type{InterpBackward}) = coefs[i-1]
 _interpu(x, g, i, coefs, ::Type{InterpNearest}) = (x-g[i-1] < g[i]-x) ? coefs[i-1] : coefs[i]
 function _interpu(x, g, i, coefs, ::Type{InterpLinear})
     f = (x-g[i-1])/(g[i]-g[i-1])
@@ -572,6 +574,8 @@ InterpGridCoefs{IT<:InterpType}(A::Array, ::Type{IT}) = InterpGridCoefs(eltype(A
 
 # Interpolation support routines
 
+npoints(::Type{InterpForward}) = 1
+npoints(::Type{InterpBackward}) = 1
 npoints(::Type{InterpNearest}) = 1
 npoints(::Type{InterpLinear}) = 2
 npoints(::Type{InterpQuadratic}) = 3
@@ -579,6 +583,8 @@ npoints(::Type{InterpCubic}) = 4
 
 # Test whether a given coordinate will yield an interpolated result
 isvalid{BC<:BoundaryCondition,IT<:InterpType}(::Type{BC},::Type{IT}, x, len::Int) = true
+isvalid{BC<:Union{BCnil,BCnan,BCna}}(::Type{BC}, ::Type{InterpForward}, x, len::Int) = x >= 0.0 && x <= len
+isvalid{BC<:Union{BCnil,BCnan,BCna}}(::Type{BC}, ::Type{InterpBackward}, x, len::Int) = x >= 0.0 && x <= len
 isvalid{BC<:Union{BCnil,BCnan,BCna}}(::Type{BC}, ::Type{InterpNearest}, x, len::Int) = x >= 0.5 && x-0.5 <= len
 isvalid{BC<:Union{BCnil,BCnan,BCna}}(::Type{BC}, ::Type{InterpLinear}, x, len::Int) = x >= 1 && x <= len
 isvalid{BC<:Union{BCnil,BCnan,BCna}}(::Type{BC}, ::Type{InterpQuadratic}, x, len::Int) = x >= 1 && x <= len
