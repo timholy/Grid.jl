@@ -590,6 +590,27 @@ isvalid{BC<:Union{BCnil,BCnan,BCna}}(::Type{BC}, ::Type{InterpLinear}, x, len::I
 isvalid{BC<:Union{BCnil,BCnan,BCna}}(::Type{BC}, ::Type{InterpQuadratic}, x, len::Int) = x >= 1 && x <= len
 isvalid{BC<:Union{BCnil,BCnan,BCna}}(::Type{BC}, ::Type{InterpCubic}, x, len::Int) = 1 <= x <= len -1
 
+# version for offsets
+function interp_coords_1d(coord1d::Vector{Int}, ::Type{InterpForward})
+    coord1d[1] = 0
+end
+# version for indices
+function interp_coords_1d{BC<:BoundaryCondition}(coord1d::Vector{Int}, ::Type{BC}, ::Type{InterpForward}, x, len::Int)
+    ix = wrap(BC, round(Int, real(x)), len)
+    coord1d[1] = ix
+    return ix, zero(typeof(x)), false
+end
+
+# version for offsets
+function interp_coords_1d(coord1d::Vector{Int}, ::Type{InterpBackward})
+    coord1d[1] = 0
+end
+# version for indices
+function interp_coords_1d{BC<:BoundaryCondition}(coord1d::Vector{Int}, ::Type{BC}, ::Type{InterpBackward}, x, len::Int)
+    ix = wrap(BC, round(Int, real(x)), len)
+    coord1d[1] = ix
+    return ix, zero(typeof(x)), false
+end
 
 # version for offsets
 function interp_coords_1d(coord1d::Vector{Int}, ::Type{InterpNearest})
@@ -761,6 +782,20 @@ function interp_coords_1d{BC<:BoundaryCondition}(coord1d::Vector{Int}, ::Type{BC
     return ix, dx, iswrap
 end
 
+function interp_coefs_1d{T,BC<:BoundaryCondition}(coef1d::Vector{T}, ::Type{BC}, ::Type{InterpForward}, dx::T)
+    coef1d[1] = one(T)
+end
+function interp_gcoefs_1d{T,BC<:BoundaryCondition}(coef1d::Vector{T}, ::Type{BC}, ::Type{InterpForward}, dx::T)
+    coef1d[1] = zero(T)
+end
+
+function interp_coefs_1d{T,BC<:BoundaryCondition}(coef1d::Vector{T}, ::Type{BC}, ::Type{InterpBackward}, dx::T)
+    coef1d[1] = one(T)
+end
+function interp_gcoefs_1d{T,BC<:BoundaryCondition}(coef1d::Vector{T}, ::Type{BC}, ::Type{InterpBackward}, dx::T)
+    coef1d[1] = zero(T)
+end
+
 function interp_coefs_1d{T,BC<:BoundaryCondition}(coef1d::Vector{T}, ::Type{BC}, ::Type{InterpNearest}, dx::T)
     coef1d[1] = one(T)
 end
@@ -871,6 +906,8 @@ const Q3inv = [7/8 1/4 -1/8; -1/8 5/4 -1/8; -1/8 1/4 7/8] # for handling "snippe
 # calling multiple times (e.g., to apply inversions for different
 # interptypes along different dimensions) would result in unnecessary
 # allocations.
+interp_invert!{BC<:BoundaryCondition}(A::Array, ::Type{BC}, ::Type{InterpForward}, dimlist) = A
+interp_invert!{BC<:BoundaryCondition}(A::Array, ::Type{BC}, ::Type{InterpBackward}, dimlist) = A
 interp_invert!{BC<:BoundaryCondition}(A::Array, ::Type{BC}, ::Type{InterpNearest}, dimlist) = A
 interp_invert!{BC<:BoundaryCondition}(A::Array, ::Type{BC}, ::Type{InterpLinear}, dimlist) = A
 function interp_invert!{BC<:BoundaryCondition}(A::Array, ::Type{BC}, ::Type{InterpQuadratic}, dimlist)
