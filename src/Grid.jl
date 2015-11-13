@@ -42,6 +42,7 @@ export
     InterpIrregular,
     InterpType,
     InterpForward,
+    InterpBackward,
     InterpNearest,
     InterpLinear,
     InterpQuadratic,
