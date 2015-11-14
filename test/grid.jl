@@ -5,11 +5,11 @@ include("derivative_numer.jl")
 # compute the transpose, without transposing elements
 # Necessary since Julia issue #7244 was fixed
 function transpose_container(p::StridedMatrix)
-  pp = similar(p, size(p,2), size(p,1))
-  for j = 1:size(p,2), i = 1:size(p,1)
-    pp[j,i] = p[i,j]
-  end
-  pp
+    pp = similar(p, size(p,2), size(p,1))
+    for j = 1:size(p,2), i = 1:size(p,1)
+        pp[j,i] = p[i,j]
+    end
+    pp
 end
 
 ## Interpolation ##
@@ -27,97 +27,97 @@ z[ic.offset.+ic.offset_base.+1] = ic.coef
 # Test that the generic coef algorithm gives the same result as the
 # dimension-specialized versions
 for n_dims = 1:4
-  dims = fill(3, n_dims)
-  s = similar(dims)
-  s[1] = 1
-  for idim = 1:n_dims-1
-    s[idim+1] = dims[idim]*s[idim]
-  end
-  ic = InterpGridCoefs(Float64, InterpQuadratic, dims, s)
-  x = rand(n_dims) .+ 1.5
-  x[x .== 2.5] = 2.49999
-  set_position(ic, BCnearest, true, x)
-  @assert ic.wrap == false
-  @assert abs(ic.coef[ceil(Int, length(ic.coef)/2)] .- prod(3/4.-(x.-2).^2)) < eps()
-  index = ic.offset.+ic.offset_base.+1
-  indices_generic = similar(index)
-  coefs_generic = similar(ic.coef)
-  Grid.interp_index_coef_generic(indices_generic, coefs_generic, ic.coord1d, ic.coef1d, s)
-  @assert index == indices_generic
-  @assert ic.coef == coefs_generic
+    dims = fill(3, n_dims)
+    s = similar(dims)
+    s[1] = 1
+    for idim = 1:n_dims-1
+        s[idim+1] = dims[idim]*s[idim]
+    end
+    ic = InterpGridCoefs(Float64, InterpQuadratic, dims, s)
+    x = rand(n_dims) .+ 1.5
+    x[x .== 2.5] = 2.49999
+    set_position(ic, BCnearest, true, x)
+    @assert ic.wrap == false
+    @assert abs(ic.coef[ceil(Int, length(ic.coef)/2)] .- prod(3/4.-(x.-2).^2)) < eps()
+    index = ic.offset.+ic.offset_base.+1
+    indices_generic = similar(index)
+    coefs_generic = similar(ic.coef)
+    Grid.interp_index_coef_generic(indices_generic, coefs_generic, ic.coord1d, ic.coef1d, s)
+    @assert index == indices_generic
+    @assert ic.coef == coefs_generic
 end
 
 # On-grid values
 A = randn(4,10)
 const EPS = sqrt(eps())
 for bc in (BCnil, BCnan, BCna, BCreflect, BCperiodic, BCnearest, BCfill)
-  for it in (InterpNearest, InterpLinear, InterpQuadratic, InterpCubic)
-    # skip boundary conditions that aren't implemented for cubic yet
-    if it == InterpCubic && !(bc <: Union{BCnan,BCna,BCnil})
-      continue
+    for it in (InterpNearest, InterpLinear, InterpQuadratic, InterpCubic)
+        # skip boundary conditions that aren't implemented for cubic yet
+        if it == InterpCubic && !(bc <: Union{BCnan,BCna,BCnil})
+            continue
+        end
+        ig = bc == BCfill ? InterpGrid(A, 0.0, it) : InterpGrid(A, bc, it)
+        for i = 1:size(A,1)
+            for j = 1:size(A,2)
+                @test_approx_eq_eps ig[i,j] A[i,j] EPS
+            end
+        end
+        v = ig[1:size(A,1), 1:size(A,2)]
+        @assert all(abs(v - A) .< EPS)
     end
-    ig = bc == BCfill ? InterpGrid(A, 0.0, it) : InterpGrid(A, bc, it)
-    for i = 1:size(A,1)
-      for j = 1:size(A,2)
-        @test_approx_eq_eps ig[i,j] A[i,j] EPS
-      end
-    end
-    v = ig[1:size(A,1), 1:size(A,2)]
-    @assert all(abs(v - A) .< EPS)
-  end
 end
 A = randn(4,5,4)
 for bc in (BCnil, BCnan, BCna, BCreflect, BCperiodic, BCnearest, BCfill)
-  for it in (InterpNearest, InterpLinear, InterpQuadratic, InterpCubic)
-    # skip boundary conditions that aren't implemented for cubic yet
-    if it == InterpCubic && !(bc <: Union{BCnan,BCna,BCnil})
-      continue
+    for it in (InterpNearest, InterpLinear, InterpQuadratic, InterpCubic)
+        # skip boundary conditions that aren't implemented for cubic yet
+        if it == InterpCubic && !(bc <: Union{BCnan,BCna,BCnil})
+            continue
+        end
+        ig = bc == BCfill ? InterpGrid(A, 0.0, it) : InterpGrid(A, bc, it)
+        for k = 1:size(A,3), j = 1:size(A,2), i = 1:size(A,1)
+            @assert abs(ig[i,j,k] - A[i,j,k]) < EPS
+        end
+        v = ig[1:size(A,1), 1:size(A,2), 1:size(A,3)]
+        @assert all(abs(v - A) .< EPS)
     end
-    ig = bc == BCfill ? InterpGrid(A, 0.0, it) : InterpGrid(A, bc, it)
-    for k = 1:size(A,3), j = 1:size(A,2), i = 1:size(A,1)
-      @assert abs(ig[i,j,k] - A[i,j,k]) < EPS
-    end
-    v = ig[1:size(A,1), 1:size(A,2), 1:size(A,3)]
-    @assert all(abs(v - A) .< EPS)
-  end
 end
 A = randn(4,5,4,3)
 for bc in (BCnil, BCnan, BCna, BCreflect, BCperiodic, BCnearest, BCfill)
-  for it in (InterpNearest, InterpLinear, InterpQuadratic, InterpCubic)
-    # skip boundary conditions that aren't implemented for cubic yet
-    if it == InterpCubic && !(bc <: Union{BCnan,BCna,BCnil})
-      continue
+    for it in (InterpNearest, InterpLinear, InterpQuadratic, InterpCubic)
+        # skip boundary conditions that aren't implemented for cubic yet
+        if it == InterpCubic && !(bc <: Union{BCnan,BCna,BCnil})
+            continue
+        end
+        ig = bc == BCfill ? InterpGrid(A, 0.0, it) : InterpGrid(A, bc, it)
+        for l = 1:size(A,4), k = 1:size(A,3), j = 1:size(A,2), i = 1:size(A,1)
+            @assert abs(ig[i,j,k,l] - A[i,j,k,l]) < EPS
+        end
+        v = ig[1:size(A,1), 1:size(A,2), 1:size(A,3), 1:size(A,4)]
+        @assert all(abs(v - A) .< EPS)
     end
-    ig = bc == BCfill ? InterpGrid(A, 0.0, it) : InterpGrid(A, bc, it)
-    for l = 1:size(A,4), k = 1:size(A,3), j = 1:size(A,2), i = 1:size(A,1)
-      @assert abs(ig[i,j,k,l] - A[i,j,k,l]) < EPS
-    end
-    v = ig[1:size(A,1), 1:size(A,2), 1:size(A,3), 1:size(A,4)]
-    @assert all(abs(v - A) .< EPS)
-  end
 end
 
 A = float([1:4;])
 for it in (InterpNearest, InterpLinear, InterpQuadratic)
-  ig = InterpGrid(A, BCreflect, it)
-  y = ig[-3:8]
-  @assert all(abs(y-A[[4:-1:1;1:4;4:-1:1]]) .< EPS)
-  @test_throws ErrorException ig[-3:8, 2:4]
+    ig = InterpGrid(A, BCreflect, it)
+    y = ig[-3:8]
+    @assert all(abs(y-A[[4:-1:1;1:4;4:-1:1]]) .< EPS)
+    @test_throws ErrorException ig[-3:8, 2:4]
 end
 for it in (InterpNearest, InterpLinear, InterpQuadratic)
-  ig = InterpGrid(A, BCnearest, it)
-  y = ig[0:6]
-  @assert all(abs(y-A[[1;1:4;4;4]]) .< EPS)
+    ig = InterpGrid(A, BCnearest, it)
+    y = ig[0:6]
+    @assert all(abs(y-A[[1;1:4;4;4]]) .< EPS)
 end
 for it in (InterpNearest, InterpLinear, InterpQuadratic)
-  ig = InterpGrid(A, BCnil, it)
-  @test_throws ErrorException ig[-0.8]
+    ig = InterpGrid(A, BCnil, it)
+    @test_throws ErrorException ig[-0.8]
 end
 for it in (InterpNearest, InterpLinear, InterpQuadratic)
-  for bc = (BCna, BCnan)
-    ig = InterpGrid(A, bc, it)
-    @test isnan(ig[-0.8])
-  end
+    for bc = (BCna, BCnan)
+        ig = InterpGrid(A, bc, it)
+        @test isnan(ig[-0.8])
+    end
 end
 
 # Quadratic interpolation
@@ -163,18 +163,18 @@ hnum = derivative2_numer(func, x)
 @test_approx_eq_eps h2 hnum cbrt(eps())*(abs(h2)+abs(hnum))
 
 for BC in (BCnan, BCna, BCnearest, BCperiodic, BCreflect, 0)
-  yi = InterpGrid(y, BC, InterpQuadratic)
-  @test_throws BoundsError yi[1.1,2.8]  # wrong dimensionality
-  func = x -> yi[x]
-  v,g = valgrad(yi, x)
-  gnum = derivative_numer(func, x)
-  @assert abs(g-gnum) < Eps*(abs(g)+abs(gnum))
-  g = zeros(2)
-  @test_throws ErrorException valgrad(g, yi, x)
-  v2,g2,h2 = valgradhess(yi, x)
-  hnum = derivative2_numer(func, x)
-  @test_approx_eq_eps g2 gnum Eps*(abs(g2)+abs(gnum))
-  @test_approx_eq_eps h2 hnum cbrt(eps())*(abs(h2)+abs(hnum))
+    yi = InterpGrid(y, BC, InterpQuadratic)
+    @test_throws BoundsError yi[1.1,2.8]  # wrong dimensionality
+    func = x -> yi[x]
+    v,g = valgrad(yi, x)
+    gnum = derivative_numer(func, x)
+    @assert abs(g-gnum) < Eps*(abs(g)+abs(gnum))
+    g = zeros(2)
+    @test_throws ErrorException valgrad(g, yi, x)
+    v2,g2,h2 = valgradhess(yi, x)
+    hnum = derivative2_numer(func, x)
+    @test_approx_eq_eps g2 gnum Eps*(abs(g2)+abs(gnum))
+    @test_approx_eq_eps h2 hnum cbrt(eps())*(abs(h2)+abs(hnum))
 end
 
 # Test derivatives of 2d interpolation
@@ -219,42 +219,42 @@ v, g = valgrad(ig, x)
 #### Interpolation on irregularly-spaced grids ####
 x = [100.0,110.0,150.0]
 for y = (rand(3), big(rand(3)))
-  iu = InterpIrregular(x, y, -200, InterpForward)
-  @assert iu[99] == -200
-  @assert iu[101] === y[2]
-  @assert iu[106] === y[2]
-  @assert iu[149] === y[3]
-  @assert iu[150.1] == -200
-  iu = InterpIrregular(x, y, -200, InterpBackward)
-  @assert iu[99] == -200
-  @assert iu[101] === y[1]
-  @assert iu[106] === y[1]
-  @assert iu[149] === y[2]
-  @assert iu[150.1] == -200
-  iu = InterpIrregular(x, y, -200, InterpNearest)
-  @assert iu[99] == -200
-  @assert iu[101] === y[1]
-  @assert iu[106] === y[2]
-  @assert iu[149] === y[3]
-  @assert iu[150.1] == -200
-  iu = InterpIrregular(x, y, BCna, InterpLinear)
-  @assert isnan(iu[99])
-  @assert abs(iu[101] - (0.9*y[1] + 0.1*y[2])) < Eps
-  @assert abs(iu[106] - (0.4*y[1] + 0.6*y[2])) < Eps
-  @assert abs(iu[149] - (y[2]/40 + (39/40)*y[3])) < Eps
-  @assert isnan(iu[150.1])
-  iu = InterpIrregular(x, y, BCnil, InterpLinear)
-  @test_throws BoundsError isnan(iu[99])
-  @assert abs(iu[101] - (0.9*y[1] + 0.1*y[2])) < Eps
-  @assert abs(iu[106] - (0.4*y[1] + 0.6*y[2])) < Eps
-  @assert abs(iu[149] - (y[2]/40 + (39/40)*y[3])) < Eps
-  @test_throws BoundsError isnan(iu[150.1])
-  iu = InterpIrregular(x, y, BCnearest, InterpLinear)
-  @assert iu[99] === y[1]
-  @assert abs(iu[101] - (0.9*y[1] + 0.1*y[2])) < Eps
-  @assert abs(iu[106] - (0.4*y[1] + 0.6*y[2])) < Eps
-  @assert abs(iu[149] - (y[2]/40 + (39/40)*y[3])) < Eps
-  @assert iu[150.1] === y[3]
+    iu = InterpIrregular(x, y, -200, InterpForward)
+    @assert iu[99] == -200
+    @assert iu[101] === y[2]
+    @assert iu[106] === y[2]
+    @assert iu[149] === y[3]
+    @assert iu[150.1] == -200
+    iu = InterpIrregular(x, y, -200, InterpBackward)
+    @assert iu[99] == -200
+    @assert iu[101] === y[1]
+    @assert iu[106] === y[1]
+    @assert iu[149] === y[2]
+    @assert iu[150.1] == -200
+    iu = InterpIrregular(x, y, -200, InterpNearest)
+    @assert iu[99] == -200
+    @assert iu[101] === y[1]
+    @assert iu[106] === y[2]
+    @assert iu[149] === y[3]
+    @assert iu[150.1] == -200
+    iu = InterpIrregular(x, y, BCna, InterpLinear)
+    @assert isnan(iu[99])
+    @assert abs(iu[101] - (0.9*y[1] + 0.1*y[2])) < Eps
+    @assert abs(iu[106] - (0.4*y[1] + 0.6*y[2])) < Eps
+    @assert abs(iu[149] - (y[2]/40 + (39/40)*y[3])) < Eps
+    @assert isnan(iu[150.1])
+    iu = InterpIrregular(x, y, BCnil, InterpLinear)
+    @test_throws BoundsError isnan(iu[99])
+    @assert abs(iu[101] - (0.9*y[1] + 0.1*y[2])) < Eps
+    @assert abs(iu[106] - (0.4*y[1] + 0.6*y[2])) < Eps
+    @assert abs(iu[149] - (y[2]/40 + (39/40)*y[3])) < Eps
+    @test_throws BoundsError isnan(iu[150.1])
+    iu = InterpIrregular(x, y, BCnearest, InterpLinear)
+    @assert iu[99] === y[1]
+    @assert abs(iu[101] - (0.9*y[1] + 0.1*y[2])) < Eps
+    @assert abs(iu[106] - (0.4*y[1] + 0.6*y[2])) < Eps
+    @assert abs(iu[149] - (y[2]/40 + (39/40)*y[3])) < Eps
+    @assert iu[150.1] === y[3]
 end
 
 #### Make sure generic implementation for higher dimensions doesn't throw
