@@ -6,7 +6,7 @@
 
 Continuous objects, such as functions or images, are frequently sampled on a regularly-spaced grid of points. The **Grid** module provides support for common operations on such objects. Currently, the two main operations are *interpolation* and *restriction/prolongation*. Restriction and prolongation are frequently used for solving partial differential equations by multigrid methods, but can also be used simply as fast, antialiased methods for two-fold resolution changes (e.g., in computing thumbnails).
 
-Note: for interpolation, the intended successor to Grid is [Interpolations](https://github.com/tlycken/Interpolations.jl). However, as of August 2015, not all features of Grid are yet implemented in Interpolations (and vice versa, of course).
+**Note**: for interpolation, the successor to Grid is [Interpolations](https://github.com/tlycken/Interpolations.jl). Julia 0.5 will be the last supported release for Grid.
 
 ## Installation
 
@@ -122,7 +122,7 @@ The last two parameters of `InterpGrid` and `CoordInterpGrid` specify the *bound
   </tr>
 </table>
 
-Most of these modes are activated by passing them as an argument to `InterpGrid` or `CoordInterpGrid` as done in the description above. To activate BCfill, pass the number which is to be produced outside the grid as an argument, instead of the mode "BCfill". 
+Most of these modes are activated by passing them as an argument to `InterpGrid` or `CoordInterpGrid` as done in the description above. To activate BCfill, pass the number which is to be produced outside the grid as an argument, instead of the mode "BCfill".
 
 The interpolation order can be one of the following:
 
@@ -178,7 +178,7 @@ Here is a second example, using a multi-dimensional grid to do multi-value inter
 Npixels = 200
 grid = rand(10, 10, 10, Npixels)
 
-# For example, the first spectrum (x1=1, x2=1, x3=1), length Npixels, is stored in 
+# For example, the first spectrum (x1=1, x2=1, x3=1), length Npixels, is stored in
 # the grid as `raw_spec = grid[:,:,:,1]`
 grid_size = size(grid) #(10,10,10,200)
 grid_strides = strides(grid) #(1,10,100,1000)
@@ -187,15 +187,15 @@ strd = stride(grid, 4) #1000
 
 # solve for the generalized interp. coefficients
 # but select only the 1st through 3rd axes for interpolation `dimlist = 1:3`
-interp_invert!(grid, BCnil, InterpCubic, 1:3)   
+interp_invert!(grid, BCnil, InterpCubic, 1:3)
 
 # prepare for interpolation on this grid
-# but also specify the dimensions and strides of the first three dimensions which we want 
+# but also specify the dimensions and strides of the first three dimensions which we want
 # to interpolate over
-ic = InterpGridCoefs(eltype(grid), InterpCubic, grid_size[1:3], grid_strides[1:3])    
+ic = InterpGridCoefs(eltype(grid), InterpCubic, grid_size[1:3], grid_strides[1:3])
 
-# Set the grid position to the indices corresponding to the x1=1.5, x2=1.5, x3=1.5 
-# value we wish to interpolate 
+# Set the grid position to the indices corresponding to the x1=1.5, x2=1.5, x3=1.5
+# value we wish to interpolate
 set_position(ic, BCnil, false, false, [1.5, 1.5, 1.5])
 
 # Iterate over the pixels in the spectrum to interpolate each pixel into a new array
