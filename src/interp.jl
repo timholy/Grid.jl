@@ -1290,7 +1290,7 @@ function pad1_index(szt::Tuple, dimpad)
         szv[i] = szv[i].+2
     end
     N = length(szt)
-    ind = cell(N)
+    ind = Array{Any}(N)
     for i in 1:N
         if szv[i] > szt[i]
             ind[i] = 2:szv[i]-1
