@@ -194,8 +194,8 @@ restrict{T}(A::Array{T}, flag::Union{Array{Bool},BitArray}) = restrict(A, flag, 
 # that each point of the array is used equally, i.e., that sum(P*R, 1)
 # is constant, and hence the edges will be preserved.
 function restrictb{T}(A::Array{T}, dim::Integer, scale::Real)
-    a::T
-    b::T
+    local a::T
+    local b::T
     Ar = restrict(A, dim, scale)
     sz = [size(Ar)...]
     sz[dim] = 1
@@ -232,8 +232,8 @@ function restrictb(A::Array, flag::Union{Array{Bool},BitArray}, scale::Real)
 end
 restrictb{T}(A::Array{T}, flag::Union{Array{Bool},BitArray}) = restrictb(A, flag, one(eltype(T)))
 function prolongb{T}(A::Array{T}, dim::Integer, len::Integer)
-    a::T
-    b::T
+    local a::T
+    local b::T
     Ap = prolong(A, dim, len)
     sz = [size(Ap)...]
     sz[dim] = 1
