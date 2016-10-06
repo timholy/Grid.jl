@@ -80,7 +80,7 @@ z = sin(x)
 
 zi = CoordInterpGrid(x, z, BCnil, InterpQuadratic)
 
-julia> z1[-1.0]
+julia> zi[-1.0]
 -0.8414709848078965
 ```
 
