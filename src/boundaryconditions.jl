@@ -10,6 +10,7 @@ type BCreflect <: BoundaryCondition; end # Reflecting boundary conditions
 type BCperiodic <: BoundaryCondition; end # Periodic boundary conditions
 type BCnearest <: BoundaryCondition; end # Return closest edge element
 type BCfill <: BoundaryCondition; end # Use specified fill value
+type BCinbounds <: BoundaryCondition; end # user guarantees that no out-of-bounds values will be accessed
 
 # Note: for interpolation, BCna is currently defined to be identical
 # to BCnan. Other applications might define different behavior,
