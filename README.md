@@ -39,7 +39,7 @@ From these evaluated points, let's define an *interpolation grid*:
 ```julia
 yi = InterpGrid(y, BCnil, InterpQuadratic)
 ```
-The last two arguments will be described later. Note that only `y` is supplied; as with Julia's arrays, the x-coordinates implicitly start at 1 and increase by 1 with each grid point. It's easy to check that `yi[i]` is equal to `y[i]`, within roundoff error:
+The last two arguments will be described later. Note that only `y` is supplied; as with Julia's arrays, the x-coordinates implicitly start at 1 and increase by 1 with each grid point. Do not be alarmed if you see ```yi``` is a ```5-element InterGrid{}``` object with ```#undef``` values if you are using the Julia REPL. It's easy to check that `yi[i]` is equal to `y[i]`, within roundoff error:
 ```julia
 julia> y[3]
 5.569000000000003
